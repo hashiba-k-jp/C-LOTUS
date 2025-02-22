@@ -15,7 +15,7 @@ using namespace std;
 
 class IPAddressGenerator{
 protected:
-    int index = 1;
+    int index = 0;
 
 public:
     IPAddress get_unique_address(void){
