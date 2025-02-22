@@ -88,7 +88,7 @@ public:
 
     void show_messages(void){
         if(message_queue.size() == 0){
-            std::cout << "No message has been created." << '\n';
+            std::cout << "\033[32m[INFO] No messages in the queue.\033[39m" << '\n';
             return;
         }
         std::cout << "++++++++++++++++++++" << "\n";
