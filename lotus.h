@@ -35,4 +35,34 @@ public:
         as_class_list.show_AS_list();
         return;
     }
+
+    void add_connection(ConnectionType type, ASNumber src, ASNumber dst){
+        ASClass* src_as_class = get_AS(src);
+        ASClass* dst_as_class = get_AS(dst);
+        if(src_as_class == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << src << " has NOT been registered, the connection CANNOT be added.\033[00m" << std::endl;
+            return;
+        }
+        if(dst_as_class == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << dst << " has NOT been registered, the connection CANNOT be added.\033[00m" << std::endl;
+            return;
+        }
+
+        connection_list.push_back(Connection{type, src, dst});
+        return;
+    }
+
+    vector<Connection> get_connection(void){
+        return connection_list;
+    }
+
+    void show_connection(void){
+        std::cout << "********************" << "\n";
+        std::cout << "CONNECTIONS" << "\n";
+        for(const Connection& c : connection_list){
+            std::cout << "  * src: " << c.src << ", dst: " << c.dst << ", type: " << c.type << "\n";
+        }
+        std::cout << "********************" << "\n";
+        return;
+    }
 };

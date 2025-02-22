@@ -37,6 +37,15 @@ using Policy = DefaultPolicy;
  * using Policy = std::variant<Policy, ASPA, ISEC>;
  */
 
+std::ostream& operator<<(std::ostream& os, ConnectionType ct) {
+    switch (ct) {
+        case ConnectionType::Peer: os << "Peer"; break;
+        case ConnectionType::Down: os << "Down"; break;
+        default: os << "Unknown"; break;
+    }
+    return os;
+}
+
 std::ostream& operator<<(std::ostream& os, ComeFrom cf) {
     switch (cf) {
         case ComeFrom::Customer: os << "Customer"; break;
