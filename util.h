@@ -37,6 +37,15 @@ using Policy = DefaultPolicy;
  * using Policy = std::variant<Policy, ASPA, ISEC>;
  */
 
+std::ostream& operator<<(std::ostream& os, MessageType mt) {
+    switch (mt) {
+        case MessageType::Init: os << "Init"; break;
+        case MessageType::Update: os << "Update"; break;
+        default: os << "Unknown"; break;
+    }
+    return os;
+}
+
 std::ostream& operator<<(std::ostream& os, ConnectionType ct) {
     switch (ct) {
         case ConnectionType::Peer: os << "Peer"; break;
@@ -103,9 +112,10 @@ void print_path(const variant<ASNumber, Itself>& v) {
 
 struct Message{
     MessageType type;
-    ASNumber src, dst;
-    IPAddress address;
-    vector<Path> path;
+    ASNumber src;
+    optional<ASNumber> dst;
+    optional<IPAddress> address;
+    optional<Path> path;
 };
 
 struct Connection{

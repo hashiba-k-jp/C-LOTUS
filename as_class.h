@@ -76,9 +76,11 @@ public:
 };
 
 class ASCLassList{
-protected:
-    map<ASNumber, ASClass> class_list = {};
+private:
     IPAddressGenerator ip_gen = IPAddressGenerator{};
+
+public:
+    map<ASNumber, ASClass> class_list = {};
 
 public:
     ASClass* get_AS(ASNumber asn){

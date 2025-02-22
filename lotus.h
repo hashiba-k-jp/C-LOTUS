@@ -65,4 +65,58 @@ public:
         std::cout << "********************" << "\n";
         return;
     }
+
+    void add_messages(MessageType msgtype, ASNumber src, optional<ASNumber> dst=nullopt, optional<IPAddress> address=nullopt, optional<Path> path=nullopt){
+        if(get_AS(src) == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << src << " has NOT been registered, the message CANNOT be added.\033[00m" << std::endl;
+            return;
+        }
+        if(msgtype == MessageType::Update){
+            if(get_AS(*dst) == nullptr){
+                std::cout << "\033[33m[WARN] Since AS " << *dst << " has NOT been registered, the message CANNOT be added.\033[00m" << std::endl;
+                return;
+            }
+        }
+
+        message_queue.push(Message{msgtype, src, dst, address, path});
+        return;
+    }
+
+    queue<Message> get_messages(void){
+        return message_queue;
+    }
+
+    void show_messages(void){
+        if(message_queue.size() == 0){
+            std::cout << "No message has been created." << '\n';
+            return;
+        }
+        std::cout << "++++++++++++++++++++" << "\n";
+        std::cout << "MESSAGES" << "\n";
+        queue<Message> tmp_msg_queue = message_queue;
+        while(!tmp_msg_queue.empty()){
+            const Message& msg = tmp_msg_queue.front();
+            if(msg.type == MessageType::Init){
+                std::cout << "  + [" << msg.type << "]   src: " << msg.src << '\n';
+            }else if(msg.type == MessageType::Update){
+                std::cout << "  + [" << msg.type << "] src: " << msg.src << ", dst: " << *msg.dst << ", network: " << *msg.address << ", path: ";
+                for(const variant<ASNumber, Itself>& p : msg.path->path){
+                    print_path(p);
+                    std::cout << "-";
+                }
+                std::cout << "\b \n";
+            }
+            tmp_msg_queue.pop();
+        }
+        std::cout << "++++++++++++++++++++" << "\n";
+        return;
+    }
+
+    void add_all_init(void){
+        for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
+            ASNumber as_number = it->second.as_number;
+            add_messages(MessageType::Init, as_number);
+        }
+        return;
+    }
 };
