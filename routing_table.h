@@ -12,14 +12,15 @@
 
 
 class RoutingTable{
-protected:
+public:
     map<IPAddress, vector<Route>> table;
     vector<Policy> policy;
-    // aspa, isec, and other object should be added to child classes...
 
 public:
+    RoutingTable() {}
     RoutingTable(vector<Policy> policy, const IPAddress network){
-        table[network] = Route({Itself::I}, ComeFrom::Customer, 1000, true);
+        this->policy = policy;
+        table[network] = {Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true}};
     }
 };
 
