@@ -104,7 +104,7 @@ public:
         if(as_class != nullptr){
             as_class->show_AS();
         }else{
-            std::cout << "\033[33mAS " << asn << " has NOT been registered.\033[00m" << std::endl;
+            std::cout << "\033[33m[WARN] AS " << asn << " has NOT been registered.\033[00m" << std::endl;
         }
         return;
     }
