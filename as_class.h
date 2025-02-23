@@ -50,9 +50,9 @@ public:
 
     void show_AS(void){
         std::cout << "====================" << "\n";
-        std::cout << "AS NUMBER : \033[36m" << as_number << "\033[39m\n";
-        std::cout << "network   : \033[36m" << network_address << "\033[39m\n";
-        std::cout << "policy    : \033[36m";
+        std::cout << "\033[1mAS NUMBER\033[0m : \033[36m" << as_number << "\033[39m\n";
+        std::cout << "\033[1mnetwork\033[0m   : \033[36m" << network_address << "\033[39m\n";
+        std::cout << "\033[1mpolicy\033[0m    : \033[36m";
         for(const Policy& p : policy){
             std::cout << p << " ";
         }
@@ -67,9 +67,9 @@ public:
                 }else{
                     std::cout << "    ";
                 }
-                std::cout << "path: " << string_path(r.path) << ", ";
-                std::cout << "LocPrf: " << r.LocPrf << ", ";
-                std::cout << "come_from: " << r.come_from << "\n";
+                std::cout << "\033[1mLocPrf:\033[0m " << std::setw(4) << r.LocPrf << ", ";
+                std::cout << "\033[1mcome_from\033[0m: " << std::setw(7) << r.come_from << ", ";
+                std::cout << "\033[1mpath\033[0m: " << string_path(r.path) << "\n";
             }
         }
         std::cout << "====================" << "\n";

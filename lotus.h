@@ -140,7 +140,7 @@ public:
         std::cout << "********************" << "\n";
         std::cout << "CONNECTIONS" << "\n";
         for(const Connection& c : connection_list){
-            std::cout << "  * src: " << c.src << ", dst: " << c.dst << ", type: " << c.type << "\n";
+            std::cout << "  * \033[1msrc\033[0m: " << c.src << ", \033[1mdst\033[0m: " << c.dst << ", \033[1mtype\033[0m: " << c.type << "\n";
         }
         std::cout << "********************" << "\n";
         return;
@@ -177,9 +177,9 @@ public:
         while(!tmp_msg_queue.empty()){
             const Message& msg = tmp_msg_queue.front();
             if(msg.type == MessageType::Init){
-                std::cout << "  + [" << msg.type << "]   src: " << msg.src << '\n';
+                std::cout << "  + \033[1m[" << msg.type << "]\033[0m   \033[1msrc\033[0m: " << msg.src << '\n';
             }else if(msg.type == MessageType::Update){
-                std::cout << "  + [" << msg.type << "] src: " << msg.src << ", dst: " << *msg.dst << ", network: " << *msg.address << ", path: " << string_path(*msg.path) << "\n";
+                std::cout << "  + \033[1m[" << msg.type << "]\033[0m \033[1msrc\033[0m: " << msg.src << ", \033[1mdst\033[0m: " << *msg.dst << ", \033[1mnetwork\033[0m: " << *msg.address << ", \033[1mpath\033[0m: " << string_path(*msg.path) << "\n";
             }
             tmp_msg_queue.pop();
         }
