@@ -114,10 +114,10 @@ bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, It
     }, lhs, rhs);
 }
 
-string string_path(Path p){
+string string_path(Path path){
     ostringstream oss;
-    for(const variant<ASNumber, Itself>& p : p){
-        oss << p << "-";
+    for (auto it = path.rbegin(); it != path.rend(); ++it) {
+        oss << *it << "-";
     }
     string string_path = oss.str();
     if(!string_path.empty()){

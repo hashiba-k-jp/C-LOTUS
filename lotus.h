@@ -53,6 +53,8 @@ protected:
                 path.push_back(ASNumber(stoi(as_string)));
             }
         }
+        // The order of the displayed path and the path in the internal data structure are REVERSED.
+        reverse(path.begin(), path.end());
         return path;
     }
 
