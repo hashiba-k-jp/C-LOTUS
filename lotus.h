@@ -78,7 +78,7 @@ public:
             }
         }
 
-        message_queue.push(Message{msgtype, src, dst, address, path});
+        message_queue.push(Message{msgtype, src, dst, address, path, nullopt});
         return;
     }
 
@@ -116,6 +116,97 @@ public:
         for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
             ASNumber as_number = it->second.as_number;
             add_messages(MessageType::Init, as_number);
+        }
+        return;
+    }
+
+    vector<Connection> get_connection_with(ASNumber as_number){
+        vector<Connection> connected_with;
+        for(const Connection& c : connection_list){
+            if(c.src == as_number || c.dst == as_number){
+                connected_with.push_back(c);
+                continue;
+            }
+        }
+        return connected_with;
+    }
+
+    ComeFrom as_a_is_what_on_c(ASNumber as_number, Connection c){
+        // E.g. c.type is down, and as_number is the src -> "The AS is the Provider on the connection."
+        if(c.type == ConnectionType::Peer){
+            return ComeFrom::Peer;
+        }else if(c.type == ConnectionType::Down){
+            if(as_number == c.src){
+                return ComeFrom::Provider;
+            }else if(as_number == c.dst){
+                return ComeFrom::Customer;
+            }
+        }
+        // ERROR
+    }
+
+    void run(void){
+        while(!message_queue.empty()){
+            Message& msg = message_queue.front();
+            if(msg.type == MessageType::Init){
+                for(const Connection& c : get_connection_with(msg.src)){
+                    msg.come_from = as_a_is_what_on_c(msg.src, c);
+                    ASNumber receive_as;
+                    if(msg.src == c.src){
+                        receive_as = c.dst;
+                    }else /* msg.src == c.dst */{
+                        receive_as = c.src;
+                    }
+                    vector<Message> new_update_message_list = as_class_list.get_AS(receive_as)->receive_init(msg);
+                    for(const Message& new_update_msg : new_update_message_list){
+                        message_queue.push(new_update_msg);
+                    }
+                }
+            }else if(msg.type == MessageType::Update){
+                ASClass* as_class = get_AS(*msg.dst);
+                vector<Connection> connection_with_dst = get_connection_with(*msg.dst);
+                optional<Connection> connection = nullopt;
+                for(const Connection& c : connection_with_dst){
+                    if(msg.src == c.src || msg.src == c.dst){
+                        connection = c;
+                        break;
+                    }
+                }
+                if(connection == nullopt){return; /* assert False */}
+
+                msg.come_from = as_a_is_what_on_c(msg.src, *connection);
+                optional<RouteDiff> route_diff = as_class->update(msg);
+                if(route_diff == nullopt){
+                    // continue;
+                }else if(route_diff->come_from == ComeFrom::Customer){
+                    for(const Connection& c : connection_with_dst){
+                        Message new_update_message;
+                        new_update_message.type = MessageType::Update;
+                        new_update_message.src = *msg.dst;
+                        new_update_message.path = route_diff->path;
+                        new_update_message.address = route_diff->address;
+                        if(c.src == *msg.dst){
+                            new_update_message.dst = c.dst;
+                        }else if(c.dst == *msg.dst){
+                            new_update_message.dst = c.src;
+                        }
+                        message_queue.push(new_update_message);
+                    }
+                }else if(route_diff->come_from == ComeFrom::Peer || route_diff->come_from == ComeFrom::Provider){
+                    for(const Connection& c : connection_with_dst){
+                        if(c.type == ConnectionType::Down && c.src == *msg.dst){
+                            Message new_update_message;
+                            new_update_message.type = MessageType::Update;
+                            new_update_message.src = *msg.dst;
+                            new_update_message.dst = c.dst;
+                            new_update_message.path = route_diff->path;
+                            new_update_message.address = route_diff->address;
+                            message_queue.push(new_update_message);
+                        }
+                    }
+                }
+            }
+            message_queue.pop();
         }
         return;
     }

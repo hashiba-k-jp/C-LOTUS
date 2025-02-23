@@ -93,11 +93,12 @@ std::ostream& operator<<(std::ostream& os, Itself itself) {
     return os;
 }
 
+vector<variant<ASNumber, Itself>> ITSELF_VEC = {Itself::I};
 bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, Itself>& rhs) {
-    return visit([](auto&& lhs_val, auto&& rhs_val) -> bool {
-        using T1 = std::decay_t<decltype(lhs_val)>;
-        using T2 = std::decay_t<decltype(rhs_val)>;
-        if constexpr (std::is_same_v<T1, T2>) {
+    return visit([](const auto& lhs_val, const auto& rhs_val) -> bool {
+        using T1 = decay_t<decltype(lhs_val)>;
+        using T2 = decay_t<decltype(rhs_val)>;
+        if constexpr (is_same_v<T1, T2>) {
             return lhs_val == rhs_val;
         } else {
             return false;
@@ -116,6 +117,7 @@ struct Message{
     optional<ASNumber> dst;
     optional<IPAddress> address;
     optional<Path> path;
+    optional<ComeFrom> come_from;
 };
 
 struct Connection{
@@ -128,6 +130,12 @@ struct Route{
     ComeFrom come_from;
     int LocPrf;
     bool best_path;
+};
+
+struct RouteDiff{
+    ComeFrom come_from;
+    Path path;
+    IPAddress address;
 };
 
 #endif
