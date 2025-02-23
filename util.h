@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include <sstream>
 
 using namespace std;
 
@@ -91,6 +92,15 @@ std::ostream& operator<<(std::ostream& os, Itself itself) {
     return os;
 }
 
+ostream& operator<<(ostream& os, const variant<ASNumber, Itself>& v) {
+    visit([&os](auto&& arg){
+        using T = decay_t<decltype(arg)>;
+        if constexpr (is_same_v<T, ASNumber>) { os << arg; }
+        else if constexpr (is_same_v<T, Itself>) { os << "I"; }
+    }, v);
+    return os;
+}
+
 vector<variant<ASNumber, Itself>> ITSELF_VEC = {Itself::I};
 bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, Itself>& rhs) {
     return visit([](const auto& lhs_val, const auto& rhs_val) -> bool {
@@ -103,10 +113,18 @@ bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, It
         }
     }, lhs, rhs);
 }
-void print_path(const variant<ASNumber, Itself>& v) {
-    std::visit([](auto&& arg) {
-        std::cout << arg;
-    }, v);
+
+string string_path(Path p){
+    ostringstream oss;
+    for(const variant<ASNumber, Itself>& p : p){
+        oss << p << "-";
+    }
+    string string_path = oss.str();
+    if(!string_path.empty()){
+        string_path.pop_back();
+    }
+
+    return string_path;
 }
 
 struct Message{

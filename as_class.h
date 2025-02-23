@@ -59,12 +59,7 @@ public:
                 }else{
                     std::cout << "    ";
                 }
-                std::cout << "path: ";
-                for(const variant<ASNumber, Itself>& p : r.path){
-                    print_path(p);
-                    std::cout << "-";
-                }
-                std::cout << "\b, ";
+                std::cout << "path: " << string_path(r.path) << ", ";
                 std::cout << "LocPrf: " << r.LocPrf << ", ";
                 std::cout << "come_from: " << r.come_from << "\n";
             }
