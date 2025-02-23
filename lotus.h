@@ -5,6 +5,7 @@
 #include <string>
 #include <stdexcept>
 #include <fstream>
+#include <stdexcept>
 
 #include <yaml-cpp/yaml.h>
 
@@ -63,6 +64,7 @@ protected:
         }else if(come_from_string == "peer"){
             return ComeFrom::Peer;
         }
+        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
     }
 
     bool parse_tf(string tf_string){
@@ -71,6 +73,7 @@ protected:
         }else if(tf_string == "false"){
             return false;
         }
+        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
     }
 
     ConnectionType parse_type(string c_type_string){
@@ -79,6 +82,7 @@ protected:
         }else if(c_type_string == "peer"){
             return ConnectionType::Peer;
         }
+        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
     }
 
     MessageType parse_message_type(string m_type_string){
@@ -87,6 +91,7 @@ protected:
         }else if(m_type_string == "update"){
             return MessageType::Update;
         }
+        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
     }
 
 public:
@@ -210,7 +215,7 @@ public:
                 return ComeFrom::Customer;
             }
         }
-        // ERROR
+        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
     }
 
     void run(void){
