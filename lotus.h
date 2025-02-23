@@ -21,81 +21,6 @@ protected:
     vector<Connection> connection_list;
     map<ASNumber, vector<ASNumber>> public_aspa_list;
 
-    vector<Policy> parse_policy(YAML::Node as_node_policy){
-        vector<Policy> policy;
-        for(const auto& p : as_node_policy){
-            if(p.as<string>() == "LocPrf"){
-                policy.push_back(Policy::LocPrf);
-            }else if(p.as<string>() == "PathLength"){
-                policy.push_back(Policy::PathLength);
-            }else{
-                optional<Policy> sec_policy = security_policy(p.as<string>());
-                if(sec_policy != nullopt){
-                    policy.push_back(*sec_policy);
-                }
-            }
-        }
-        return policy;
-    }
-
-    Path parse_path(string path_string){
-        Path path;
-        vector<string> as_string_list;
-        std::stringstream ss(path_string);
-        std::string token;
-        while (std::getline(ss, token, '-')) {
-            as_string_list.push_back(token);
-        }
-        for(const string& as_string : as_string_list){
-            if(as_string == "i"){
-                path.push_back(Itself::I);
-            }else{
-                path.push_back(ASNumber(stoi(as_string)));
-            }
-        }
-        // The order of the displayed path and the path in the internal data structure are REVERSED.
-        reverse(path.begin(), path.end());
-        return path;
-    }
-
-    ComeFrom parse_come_from(string come_from_string){
-        if(come_from_string == "customer"){
-            return ComeFrom::Customer;
-        }else if(come_from_string == "provider"){
-            return ComeFrom::Provider;
-        }else if(come_from_string == "peer"){
-            return ComeFrom::Peer;
-        }
-        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-    }
-
-    bool parse_tf(string tf_string){
-        if(tf_string == "true"){
-            return true;
-        }else if(tf_string == "false"){
-            return false;
-        }
-        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-    }
-
-    ConnectionType parse_type(string c_type_string){
-        if(c_type_string == "down"){
-            return ConnectionType::Down;
-        }else if(c_type_string == "peer"){
-            return ConnectionType::Peer;
-        }
-        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-    }
-
-    MessageType parse_message_type(string m_type_string){
-        if(m_type_string == "init"){
-            return MessageType::Init;
-        }else if(m_type_string == "update"){
-            return MessageType::Update;
-        }
-        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-    }
-
 public:
     void add_AS(ASNumber asn){
         as_class_list.add_AS(asn);
@@ -327,13 +252,13 @@ public:
                         IPAddress route_address = r.first.as<IPAddress>();
                         for(const auto& route : r.second){
                             Path path = parse_path(route["path"].as<string>());
-                            ComeFrom come_from = parse_come_from(route["come_from"].as<string>());
+                            ComeFrom come_from = route["come_from"].as<ComeFrom>();
                             int LocPrf = route["LocPrf"].as<int>();
-                            bool best_path = parse_tf(route["best_path"].as<string>());
+                            bool best_path = route["best_path"].as<bool>();
                             routing_table.table[route_address].push_back(Route{path, come_from, LocPrf, best_path});
                         }
                     }
-                    vector<Policy> policy = parse_policy(as_node["policy"]);
+                    vector<Policy> policy = as_node["policy"].as<vector<Policy>>();
                     routing_table.policy = policy;
                     ASClass new_as = {as_number, address, policy, routing_table};
                     new_as_class_list.class_list[as_number] = new_as;
@@ -345,7 +270,7 @@ public:
                 for(const auto& c_node : imported["connection"]){
                     ASNumber src = c_node["src"].as<ASNumber>();
                     ASNumber dst = c_node["dst"].as<ASNumber>();
-                    ConnectionType type = parse_type(c_node["type"].as<string>());
+                    ConnectionType type = c_node["type"].as<ConnectionType>();
                     connection_list.push_back(Connection{type, src, dst});
                 }
 
@@ -353,7 +278,7 @@ public:
                 message_queue = {};
                 for(const auto& m_node : imported["message"]){
                     ASNumber src = m_node["src"].as<ASNumber>();
-                    MessageType msgtype = parse_message_type(m_node["type"].as<string>());
+                    MessageType msgtype = m_node["type"].as<MessageType>();
                     if(msgtype == MessageType::Init){
                         add_messages(msgtype, src);
                     }else if(msgtype == MessageType::Update){

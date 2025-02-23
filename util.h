@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <sstream>
 
+#include <yaml-cpp/yaml.h>
+
 using namespace std;
 
 /***
@@ -37,6 +39,135 @@ using Policy = DefaultPolicy;
  * enum class ExtendedPolicyISEC { ISEC };
  * using Policy = std::variant<Policy, ASPA, ISEC>;
  */
+
+namespace YAML{
+    template<>
+    struct convert<MessageType>{
+        static Node encode(const MessageType& msg_type){
+            Node node;
+            switch(msg_type) {
+                case MessageType::Init:   node = "init"; break;
+                case MessageType::Update: node = "update"; break;
+            }
+            return node;
+        }
+        static bool decode(const Node& node, MessageType& msg_type){
+            if(!node.IsScalar()){
+                return false;
+            }
+            string s = node.as<string>();
+            if(s == "init"){
+                msg_type = MessageType::Init;
+            }else if(s == "update"){
+                msg_type = MessageType::Update;
+            }else{
+                return false;
+            }
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<ConnectionType>{
+        static Node encode(const ConnectionType& c_type){
+            Node node;
+            switch(c_type) {
+                case ConnectionType::Peer: node = "peer"; break;
+                case ConnectionType::Down: node = "down"; break;
+            }
+            return node;
+        }
+        static bool decode(const Node& node, ConnectionType& c_type){
+            if(!node.IsScalar()){
+                return false;
+            }
+            string s = node.as<string>();
+            if(s == "peer"){
+                c_type = ConnectionType::Peer;
+            }else if(s == "down"){
+                c_type = ConnectionType::Down;
+            }else{
+                return false;
+            }
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<ComeFrom>{
+        static Node encode(const ComeFrom& come_from){
+            Node node;
+            switch(come_from) {
+                case ComeFrom::Provider: node = "provider"; break;
+                case ComeFrom::Peer:     node = "peer"; break;
+                case ComeFrom::Customer: node = "customer"; break;
+            }
+            return node;
+        }
+        static bool decode(const Node& node, ComeFrom& come_from){
+            if(!node.IsScalar()){
+                return false;
+            }
+            string s = node.as<string>();
+            if(s == "provider"){
+                come_from = ComeFrom::Provider;
+            }else if(s == "peer"){
+                come_from = ComeFrom::Peer;
+            }else if(s == "customer"){
+                come_from = ComeFrom::Customer;
+            }else{
+                return false;
+            }
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Policy>{
+        static Node encode(const Policy& policy){
+            Node node;
+            switch(policy) {
+                case Policy::LocPrf:     node = "LocPrf"; break;
+                case Policy::PathLength: node = "PathLength"; break;
+            }
+            return node;
+        }
+        static bool decode(const Node& node, Policy& policy){
+            if(!node.IsScalar()){
+                return false;
+            }
+            string s = node.as<string>();
+            if(s == "LocPrf"){
+                policy = Policy::LocPrf;
+            }else if(s == "PathLength"){
+                policy = Policy::PathLength;
+            }else{
+                return false;
+            }
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<vector<Policy>> {
+        static Node encode(const vector<Policy>& policies) {
+            Node node;
+            for (const auto& p : policies) {
+                node.push_back(p);
+            }
+            return node;
+        }
+        static bool decode(const Node& node, std::vector<Policy>& policy_list) {
+            if(!node.IsSequence())
+                return false;
+            for (const auto& n : node) {
+                policy_list.push_back(n.as<Policy>());
+            }
+            return true;
+        }
+    };
+
+}
 
 std::ostream& operator<<(std::ostream& os, MessageType mt) {
     switch (mt) {
@@ -112,6 +243,26 @@ bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, It
             return false;
         }
     }, lhs, rhs);
+}
+
+Path parse_path(string path_string){
+    Path path;
+    vector<string> as_string_list;
+    std::stringstream ss(path_string);
+    std::string token;
+    while (std::getline(ss, token, '-')) {
+        as_string_list.push_back(token);
+    }
+    for(const string& as_string : as_string_list){
+        if(as_string == "i"){
+            path.push_back(Itself::I);
+        }else{
+            path.push_back(ASNumber(stoi(as_string)));
+        }
+    }
+    // The order of the displayed path and the path in the internal data structure are REVERSED.
+    reverse(path.begin(), path.end());
+    return path;
 }
 
 string string_path(Path path){
