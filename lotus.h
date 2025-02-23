@@ -4,6 +4,10 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include <fstream>
+
+#include <yaml-cpp/yaml.h>
+
 #include "util.h"
 #include "as_class.h"
 
@@ -15,6 +19,75 @@ protected:
     queue<Message> message_queue;
     vector<Connection> connection_list;
     map<ASNumber, vector<ASNumber>> public_aspa_list;
+
+    vector<Policy> parse_policy(YAML::Node as_node_policy){
+        vector<Policy> policy;
+        for(const auto& p : as_node_policy){
+            if(p.as<string>() == "LocPrf"){
+                policy.push_back(Policy::LocPrf);
+            }else if(p.as<string>() == "PathLength"){
+                policy.push_back(Policy::PathLength);
+            }else{
+                optional<Policy> sec_policy = security_policy(p.as<string>());
+                if(sec_policy != nullopt){
+                    policy.push_back(*sec_policy);
+                }
+            }
+        }
+        return policy;
+    }
+
+    Path parse_path(string path_string){
+        Path path;
+        vector<string> as_string_list;
+        std::stringstream ss(path_string);
+        std::string token;
+        while (std::getline(ss, token, '-')) {
+            as_string_list.push_back(token);
+        }
+        for(const string& as_string : as_string_list){
+            if(as_string == "i"){
+                path.push_back(Itself::I);
+            }else{
+                path.push_back(ASNumber(stoi(as_string)));
+            }
+        }
+        return path;
+    }
+
+    ComeFrom parse_come_from(string come_from_string){
+        if(come_from_string == "customer"){
+            return ComeFrom::Customer;
+        }else if(come_from_string == "provider"){
+            return ComeFrom::Provider;
+        }else if(come_from_string == "peer"){
+            return ComeFrom::Peer;
+        }
+    }
+
+    bool parse_tf(string tf_string){
+        if(tf_string == "true"){
+            return true;
+        }else if(tf_string == "false"){
+            return false;
+        }
+    }
+
+    ConnectionType parse_type(string c_type_string){
+        if(c_type_string == "down"){
+            return ConnectionType::Down;
+        }else if(c_type_string == "peer"){
+            return ConnectionType::Peer;
+        }
+    }
+
+    MessageType parse_message_type(string m_type_string){
+        if(m_type_string == "init"){
+            return MessageType::Init;
+        }else if(m_type_string == "update"){
+            return MessageType::Update;
+        }
+    }
 
 public:
     void add_AS(ASNumber asn){
@@ -205,4 +278,96 @@ public:
         }
         return;
     }
+
+    /* OVERRIDE THIS FUNCTION (and type if necessary) TO ADD SECURITY OBJECTS */
+    virtual void parse_security_objects(YAML::Node node){
+        return;
+    }
+
+    /* OVERRIDE THIS FUNCTION TO ADD SECURITY POLICIES */
+    virtual optional<Policy> security_policy(string policy_string){
+        return nullopt;
+
+        /* EXAMPLE */
+        // if(policy_string == "ASPA"){
+        //     return Policy::ASPA;
+        // }else{
+        //     return nullopt;
+        // }
+    }
+
+    void file_import(string file_path){
+        ifstream file(file_path);
+        string line;
+        if(file){
+            try{
+                std::cout << "\033[32m[INFO] Parsing \"" << file_path << "\".\033[00m" << std::endl;
+
+                YAML::Node imported = YAML::Load(file);
+
+                /* AS LIST */
+                int index = imported["IP_gen_seed"].as<int>();
+                ASCLassList new_as_class_list{index};
+
+                YAML::Node as_list = imported["AS_list"];
+                for(const auto& as_node : as_list){
+                    ASNumber as_number = as_node["AS"].as<ASNumber>();
+
+                    IPAddress address = as_node["network_address"].as<IPAddress>();
+
+                    RoutingTable routing_table;
+                    for(const auto& r : as_node["routing_table"]){
+                        IPAddress route_address = r.first.as<IPAddress>();
+                        for(const auto& route : r.second){
+                            Path path = parse_path(route["path"].as<string>());
+                            ComeFrom come_from = parse_come_from(route["come_from"].as<string>());
+                            int LocPrf = route["LocPrf"].as<int>();
+                            bool best_path = parse_tf(route["best_path"].as<string>());
+                            routing_table.table[route_address].push_back(Route{path, come_from, LocPrf, best_path});
+                        }
+                    }
+                    vector<Policy> policy = parse_policy(as_node["policy"]);
+                    routing_table.policy = policy;
+                    ASClass new_as = {as_number, address, policy, routing_table};
+                    new_as_class_list.class_list[as_number] = new_as;
+                }
+                as_class_list = new_as_class_list;
+
+                /* CONNECTION LIST */
+                connection_list = {};
+                for(const auto& c_node : imported["connection"]){
+                    ASNumber src = c_node["src"].as<ASNumber>();
+                    ASNumber dst = c_node["dst"].as<ASNumber>();
+                    ConnectionType type = parse_type(c_node["type"].as<string>());
+                    connection_list.push_back(Connection{type, src, dst});
+                }
+
+                /* MESSAGES LIST */
+                message_queue = {};
+                for(const auto& m_node : imported["message"]){
+                    ASNumber src = m_node["src"].as<ASNumber>();
+                    MessageType msgtype = parse_message_type(m_node["type"].as<string>());
+                    if(msgtype == MessageType::Init){
+                        add_messages(msgtype, src);
+                    }else if(msgtype == MessageType::Update){
+                        ASNumber dst = m_node["dst"].as<ASNumber>();
+                        IPAddress address = m_node["network"].as<IPAddress>();
+                        Path path = parse_path(m_node["path"].as<string>());
+                        add_messages(msgtype, src, dst, address, path);
+                    }
+                }
+
+                /* SECURITY OBJECTS (RPKI) */
+                parse_security_objects(imported);
+
+            }catch(YAML::ParserException &e){
+                std::cout << "\033[33m[WARN] The file \"" << file_path << "\" is INVALID as a yaml file.\033[00m" << std::endl;
+                std::cerr << "\033[33m       " << e.what() << "\033[00m\n";
+            }
+        }else{
+            std::cout << "\033[33m[WARN] The file \"" << file_path << "\" does NOT exist.\033[00m" << std::endl;
+        }
+        return;
+    }
+
 };

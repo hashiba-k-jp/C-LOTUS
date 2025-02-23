@@ -18,6 +18,10 @@ protected:
     int index = 0;
 
 public:
+    IPAddressGenerator(int index=0){
+        this->index = index;
+    }
+
     IPAddress get_unique_address(void){
         index += 1;
         return IPAddress{"10." + to_string(index/256) + "." + to_string(index%256) + ".0/24"};
@@ -33,11 +37,15 @@ public:
 
 public:
     ASClass() {}
-    ASClass(ASNumber as_number, IPAddress address){
+    ASClass(ASNumber as_number, IPAddress address, vector<Policy> policy={Policy::LocPrf, Policy::PathLength}, optional<RoutingTable> given_routing_table=nullopt){
         this->as_number = as_number;
         this->network_address = address;
         this->policy = {Policy::LocPrf, Policy::PathLength};
-        this->routing_table = RoutingTable{policy, address};
+        if(given_routing_table == nullopt){
+            this->routing_table = RoutingTable{policy, address};
+        }else{
+            this->routing_table = *given_routing_table;
+        }
     }
 
     void show_AS(void){
@@ -134,6 +142,11 @@ public:
     map<ASNumber, ASClass> class_list = {};
 
 public:
+    ASCLassList(int index=0){
+        this->class_list = {};
+        this->ip_gen = IPAddressGenerator(index);
+    }
+
     ASClass* get_AS(ASNumber asn){
         auto it = class_list.find(asn);
         if (it != class_list.end()) {
