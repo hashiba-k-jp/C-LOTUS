@@ -60,7 +60,7 @@ public:
                     std::cout << "    ";
                 }
                 std::cout << "path: ";
-                for(const variant<ASNumber, Itself>& p : r.path.path){
+                for(const variant<ASNumber, Itself>& p : r.path){
                     print_path(p);
                     std::cout << "-";
                 }
@@ -86,11 +86,11 @@ public:
                 IPAddress address = it->first;
                 Route r = it->second;
                 Message new_update_message;
-                if(r.path.path == ITSELF_VEC){
+                if(r.path == ITSELF_VEC){
                     new_update_message = Message{MessageType::Update, update_src, update_dst, address, Path{{update_src}}, nullopt};
                 }else{
                     Path p = r.path;
-                    p.path.push_back(update_src);
+                    p.push_back(update_src);
                     new_update_message = Message{MessageType::Update, update_src, update_dst, address, p, nullopt};
                 }
                 new_update_message_list.push_back(new_update_message);
@@ -101,11 +101,11 @@ public:
                 Route r = it->second;
                 Message new_update_message;
                 if(r.come_from == ComeFrom::Customer){
-                    if(r.path.path == ITSELF_VEC){
+                    if(r.path == ITSELF_VEC){
                         new_update_message = Message{MessageType::Update, update_src, update_dst, address, Path{{update_src}}, nullopt};
                     }else{
                         Path p = r.path;
-                        p.path.push_back(update_src);
+                        p.push_back(update_src);
                         new_update_message = Message{MessageType::Update, update_src, update_dst, address, p, nullopt};
                     }
                 }
@@ -116,7 +116,7 @@ public:
     }
 
     optional<RouteDiff> update(Message update_msg){
-        for(const variant<ASNumber, Itself>& as_on_path : update_msg.path->path){
+        for(const variant<ASNumber, Itself>& as_on_path : *update_msg.path){
             if(as_number == as_on_path){
                 return nullopt;
             }
@@ -125,7 +125,7 @@ public:
         if(route_diff == nullopt){
             return nullopt;
         }else{
-            route_diff->path.path.push_back(as_number);
+            route_diff->path.push_back(as_number);
             return route_diff;
         }
     }

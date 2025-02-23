@@ -80,8 +80,8 @@ public:
                             }
                             break;
                         case Policy::PathLength:
-                            int new_length = new_route.path.path.size();
-                            int best_length = best->path.path.size();
+                            int new_length = new_route.path.size();
+                            int best_length = best->path.size();
                             if(new_length < best_length){
                                 new_route.best_path = true;
                                 best->best_path = false;

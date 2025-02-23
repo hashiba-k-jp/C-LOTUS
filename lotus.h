@@ -100,7 +100,7 @@ public:
                 std::cout << "  + [" << msg.type << "]   src: " << msg.src << '\n';
             }else if(msg.type == MessageType::Update){
                 std::cout << "  + [" << msg.type << "] src: " << msg.src << ", dst: " << *msg.dst << ", network: " << *msg.address << ", path: ";
-                for(const variant<ASNumber, Itself>& p : msg.path->path){
+                for(const variant<ASNumber, Itself>& p : *msg.path){
                     print_path(p);
                     std::cout << "-";
                 }

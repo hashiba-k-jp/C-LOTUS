@@ -85,9 +85,7 @@ std::ostream& operator<<(std::ostream& os, DefaultPolicy policy) {
  *** data structures
  ***/
 enum class Itself{ I };
-struct Path{
-    vector<variant<ASNumber, Itself>> path;
-};
+using Path = vector<variant<ASNumber, Itself>>;
 std::ostream& operator<<(std::ostream& os, Itself itself) {
     os << "I";
     return os;
