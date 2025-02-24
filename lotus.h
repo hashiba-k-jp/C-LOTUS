@@ -347,4 +347,34 @@ public:
         return;
     }
 
+    void gen_attack(ASNumber src, ASNumber target){
+        if(as_class_list.class_list.find(src) == as_class_list.class_list.end()){
+            std::cout << "\033[33m[WARN] Since AS " << src << " has NOT been registered, no attack has been generated.\033[00m" << std::endl;
+            return;
+        }
+        ASClass* target_as_class = get_AS(target);
+        if(target_as_class == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << target << " has NOT been registered, no attack has been generated.\033[00m" << std::endl;
+            return;
+        }
+
+        vector<Connection> src_connection_list = get_connection_with(src);
+        vector<ASNumber> adj_as_list;
+        for(const auto& c : src_connection_list){
+            if(src == c.src){
+                adj_as_list.push_back(c.dst);
+            }else if(src == c.dst){
+                adj_as_list.push_back(c.src);
+            }
+        }
+
+        IPAddress target_address = target_as_class->network_address;
+        Path attack_path = Path{target, src};
+
+        for(const ASNumber& adj_as : adj_as_list){
+            add_messages(MessageType::Update, src, adj_as, target_address, attack_path);
+        }
+        return;
+    }
+
 };
