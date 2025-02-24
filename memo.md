@@ -6,9 +6,17 @@
 The order of the displayed path and the path in the internal data structure are **REVERSED**,
 because when using the C++ vector type as a path data structure, it takes less time to add to the end (using the push_back function) rather than adding to the head.
 
+#### ASPA data of exported YAML file
+When exporting to a file, ASPA information is **not** included by default. Thus, it will not work if imported in the original LOTUS implementation (by han9umeda).
+It will work by putting ``ASPA: {}`` to the .yml file to indicate that there is no ASPA.
+
 <hr>
 
 #### pathの順序
-
 表示されるpathと、内部データ構造のpathでは順序が**逆**になっている。
 これはC++のvector型を扱う際に、先頭に追加するのではなく後ろに追加（push_back関数）する方が実行時間が短いためである。
+
+
+#### 出力YAMLファイルのASPA
+このプログラムでファイルに出力する際、デフォルトではASPA情報を出力しない。そのため（han9umedaによる）元のLOTUSの実装においてインポートしても動作しない。
+.ymlファイルにASPAが無いことを示す ``ASPA: {}`` と入れると動作する。
