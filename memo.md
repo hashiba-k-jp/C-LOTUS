@@ -10,6 +10,10 @@ because when using the C++ vector type as a path data structure, it takes less t
 When exporting to a file, ASPA information is **not** included by default. Thus, it will not work if imported in the original LOTUS implementation (by han9umeda).
 It will work by putting ``ASPA: {}`` to the .yml file to indicate that there is no ASPA.
 
+#### parallel processing
+Parallel processing is available using OpenMP.
+This is useful when creating multiple instances of LOTUS, giving each one an initial condition, and executing them with ``LOTUS.run()``.
+
 <hr>
 
 #### pathの順序
@@ -18,5 +22,9 @@ It will work by putting ``ASPA: {}`` to the .yml file to indicate that there is 
 
 
 #### 出力YAMLファイルのASPA
-このプログラムでファイルに出力する際、デフォルトではASPA情報を出力しない。そのため（han9umedaによる）元のLOTUSの実装においてインポートしても動作しない。
+このプログラムでファイルに出力する際、デフォルトではASPA情報を出力しない。そのため（han9umedaによる）元のLOTUSの実装においてインポートしても動作**しない**。
 .ymlファイルにASPAが無いことを示す ``ASPA: {}`` と入れると動作する。
+
+#### 並列処理
+OpenMPによる並列処理ができる。
+LOTUSのインスタンスを複数作成し、それぞれに初期条件を与えて ``LOTUS.run()`` で実行するなどの処理を行う際に有用。
