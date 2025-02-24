@@ -444,4 +444,16 @@ namespace YAML{
     };
 }
 
+template <typename T, typename... Ts>
+bool contains(const std::vector<std::variant<Ts...>>& vec, const T& value) {
+    return std::find_if(vec.begin(), vec.end(), [&value](const std::variant<Ts...>& v) {
+        return std::visit([&value](auto&& arg) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, T>) {
+                return arg == value;
+            }
+            return false;
+        }, v);
+    }) != vec.end();
+}
+
 #endif
