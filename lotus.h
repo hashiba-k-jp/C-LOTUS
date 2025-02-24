@@ -14,6 +14,7 @@
 #include "as_class.h"
 
 using namespace std;
+const vector<string> SPINNER = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"};
 
 class LOTUS{
 protected:
@@ -148,7 +149,8 @@ public:
         throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
     }
 
-    void run(void){
+    void run(bool print_progress=false){
+        int processed_msg_num = 0;
         while(!message_queue.empty()){
             Message& msg = message_queue.front();
             if(msg.type == MessageType::Init){
@@ -210,6 +212,13 @@ public:
                 }
             }
             message_queue.pop();
+            if(print_progress){
+                processed_msg_num++;
+                std::cout << "\r\033[32m" << SPINNER[(processed_msg_num/2000)%10] << " Running LOTUS, " << std::right << std::setw(8) << processed_msg_num << " finished, " << std::right << std::setw(8) << message_queue.size() << " left.\033[00m" << std::flush;
+            }
+        }
+        if(print_progress){
+            std::cout << '\n';
         }
         return;
     }
