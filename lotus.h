@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <stdexcept>
+#include <filesystem>
 
 #include <yaml-cpp/yaml.h>
 
@@ -240,7 +241,6 @@ public:
                 /* AS LIST */
                 int index = imported["IP_gen_seed"].as<int>();
                 ASCLassList new_as_class_list{index};
-
                 YAML::Node as_list = imported["AS_list"];
                 for(const auto& as_node : as_list){
                     ASNumber as_number = as_node["AS"].as<ASNumber>();
@@ -299,6 +299,51 @@ public:
         }else{
             std::cout << "\033[33m[WARN] The file \"" << file_path << "\" does NOT exist.\033[00m" << std::endl;
         }
+        return;
+    }
+
+    void file_export(string file_path_string){
+        YAML::Node export_data;
+
+        filesystem::path file_path(file_path_string);
+
+        // if (filesystem::exists(file_path)) {
+        //     std::cout << "\033[33m[WARN] The file \"" << file_path_string << "\" is already exist.\033[00m\n";
+        //     std::cout << "Are you sure to overwrite? (y/n) ";
+        //     string user_input;
+        //     cin >> user_input;
+        //     std::transform(user_input.begin(), user_input.end(), user_input.begin(), ::tolower);
+        //     if(!(user_input == "y" || user_input == "yes")){
+        //         std::cerr << "\033[32m[INFO] Canceled. The file was not overwritten.\033[00m\n";
+        //         return;
+        //     }
+        // }
+
+        /* AS LIST */
+        for(const auto& it : YAML::convert<ASCLassList>::encode(as_class_list)){
+            export_data[it.first] = it.second;
+        }
+        /* CONNECTION LIST */
+        export_data["connection"] = connection_list;
+
+        /* MESSAGES LIST */
+        export_data["message"] = message_queue;
+
+        /* SECURITY OBJECTS */
+        /* ... */
+
+        std::ofstream fout(file_path_string);
+        if (!fout) {
+            std::cerr << "\033[33m[WARN] Failed to open the file \"" << file_path_string << "\" for writing.\033[00m\n";
+            return;
+        }
+
+        YAML::Emitter out;
+        out.SetIndent(1);
+        out << export_data;
+        fout << out.c_str();
+        fout.close();
+
         return;
     }
 

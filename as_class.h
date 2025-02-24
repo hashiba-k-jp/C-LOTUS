@@ -14,7 +14,7 @@
 using namespace std;
 
 class IPAddressGenerator{
-protected:
+public:
     int index = 0;
 
 public:
@@ -134,11 +134,10 @@ public:
     }
 };
 
-class ASCLassList{
-private:
-    IPAddressGenerator ip_gen = IPAddressGenerator{};
 
+class ASCLassList{
 public:
+    IPAddressGenerator ip_gen = IPAddressGenerator{};
     map<ASNumber, ASClass> class_list = {};
 
 public:
@@ -185,5 +184,51 @@ public:
     }
 };
 
+namespace YAML{
+    template<>
+    struct convert<ASClass> {
+        static Node encode(const ASClass& as_class) {
+            Node node;
+            node["AS"]              = as_class.as_number;
+            node["network_address"] = as_class.network_address;
+            node["policy"]          = as_class.policy;
+            node["routing_table"]   = as_class.routing_table;
+            return node;
+        }
+        static bool decode(const Node& node, ASClass& as_class) {
+            if(!node.IsSequence()){
+                return false;
+            }
+            as_class.as_number       = node["AS"].as<ASNumber>();
+            as_class.network_address = node["network_address"].as<IPAddress>();
+            as_class.policy          = node["policy"].as<vector<Policy>>();
+            as_class.routing_table   = node["routing_table"].as<RoutingTable>();
+            as_class.routing_table.policy = as_class.policy;
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<ASCLassList> {
+        static Node encode(const ASCLassList& as_class_list) {
+            Node node;
+            for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
+                node["AS_list"].push_back(it->second);
+            }
+            node["IP_gen_seed"] = as_class_list.ip_gen.index;
+            return node;
+        }
+        static bool decode(const Node& node, ASCLassList& as_class_list) {
+            if(!node.IsSequence()){
+                return false;
+            }
+            for(const auto& as_class : node["AS_list"]){
+                as_class_list.class_list[as_class["AS"].as<ASNumber>()] = as_class.as<ASClass>();
+            }
+            as_class_list.ip_gen = IPAddressGenerator{node["IP_gen_seed"].as<int>()};
+            return true;
+        }
+    };
+}
 
 #endif

@@ -106,5 +106,25 @@ public:
     }
 };
 
+namespace YAML{
+    template<>
+    struct convert<RoutingTable>{
+        static Node encode(const RoutingTable& routing_table){
+            Node node;
+            // node["policy"]    = routing_table.policy;
+            for(const auto& it : routing_table.table){
+                node[it.first] = it.second;
+            }
+            return node;
+        };
+        static bool decode(const Node& node, RoutingTable& routing_table){
+            if(!node.IsScalar()){
+                return false;
+            }
+            routing_table.table = node["routing_table"].as<map<IPAddress, vector<Route>>>();
+            return true;
+        }
+    };
+}
 
 #endif

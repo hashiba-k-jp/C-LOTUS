@@ -166,7 +166,6 @@ namespace YAML{
             return true;
         }
     };
-
 }
 
 std::ostream& operator<<(std::ostream& os, MessageType mt) {
@@ -304,5 +303,145 @@ struct RouteDiff{
     Path path;
     IPAddress address;
 };
+
+namespace YAML{
+
+    /* STRUCTS */
+    template<>
+    struct convert<Message>{
+        static Node encode(const Message& msg){
+            Node node;
+            node["type"] = msg.type;
+            node["src"]  = msg.src;
+            if(msg.type == MessageType::Update){
+                node["dst"]       = *msg.dst;
+                node["network"]   = *msg.address;
+                node["path"]      = string_path(*msg.path);
+                node["come_from"] = *msg.come_from;
+            }
+            return node;
+        }
+        static bool decode(const Node& node, Message& msg){
+            if(!node.IsScalar()){
+                return false;
+            }
+            msg.type = node["type"].as<MessageType>();
+            msg.src  = node["src"].as<ASNumber>();
+            if(node["type"].as<MessageType>() == MessageType::Update){
+                msg.dst       = node["dst"].as<ASNumber>();
+                msg.address   = node["network"].as<IPAddress>();
+                msg.path      = parse_path(node["path"].as<string>());
+                msg.come_from = node["come_from"].as<ComeFrom>();
+            }
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Connection>{
+        static Node encode(const Connection& c){
+            Node node;
+            node["dst"]  = c.dst;
+            node["src"]  = c.src;
+            node["type"] = c.type;
+            return node;
+        }
+        static bool decode(const Node& node, Connection& c){
+            if(!node.IsScalar()){
+                return false;
+            }
+            c.src  = node["src"].as<ASNumber>();
+            c.dst  = node["dst"].as<ASNumber>();
+            c.type = node["type"].as<ConnectionType>();
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Route>{
+        static Node encode(const Route& r){
+            Node node;
+            node["path"]      = string_path(r.path);
+            node["come_from"] = r.come_from;
+            node["LocPrf"]    = r.LocPrf;
+            node["best_path"] = r.best_path;
+            return node;
+        };
+        static bool decode(const Node& node, Route& r){
+            if(!node.IsScalar()){
+                return false;
+            }
+            r.path      = parse_path(node["path"].as<string>());
+            r.come_from = node["come_from"].as<ComeFrom>();
+            r.LocPrf    = node["LocPrf"].as<int>();
+            r.best_path = node["best_path"].as<bool>();
+            return true;
+        }
+    };
+
+    /* VECTOR, MAP,  */
+
+    template<typename Type>
+    struct convert<vector<Type>>{
+        static Node encode(const vector<Type>& vector_t){
+            Node node(NodeType::Sequence);
+            for(const auto& entry : vector_t){
+                node.push_back(entry);
+            }
+            return node;
+        }
+        static bool decode(const Node& node, vector<Type>& vector_t){
+            if(!node.IsMap()){
+                return false;
+            }
+            for(const auto& entry : node){
+                vector_t.push_back(entry.as<Type>());
+            }
+            return true;
+        }
+    };
+
+    template<typename Type>
+    struct convert<queue<Type>>{
+        static Node encode(const queue<Type>& queue_t){
+            Node node(NodeType::Sequence);
+            queue<Type> tmp_queue = queue_t;
+            while(!tmp_queue.empty()){
+                node.push_back(tmp_queue.front());
+                tmp_queue.pop();
+            }
+            return node;
+        }
+        static bool decode(const Node& node, queue<Type>& queue_t){
+            if(!node.IsSequence()){
+                return false;
+            }
+            for(const auto& entry : node){
+                queue_t.push(entry.as<Type>());
+            }
+            return true;
+        }
+    };
+
+    template<typename Key, typename Value>
+    struct convert<map<Key, Value>>{
+        static Node encode(const map<Key, Value>& map){
+            Node node(NodeType::Map);
+            for (const auto& entry : map){
+                node[entry.first] = entry.second;
+            }
+            return node;
+        }
+        static bool decode(const Node& node, map<Key, Value>& map){
+            if(!node.IsMap()){
+                return false;
+            }
+            for(const auto& entry : node){
+                map[entry.first.as<Key>()] = entry.second.as<Value>();
+            }
+            return true;
+        }
+    };
+}
 
 #endif
