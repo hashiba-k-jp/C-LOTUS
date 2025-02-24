@@ -51,14 +51,14 @@ public:
         }
         Route new_route = Route{path, come_from, LocPrf, false};
         if(table.count(network) > 0){ /* when the network already has several routes. */
-            optional<Route> best = nullopt;
-            for(const Route& r : table[network]){
+            Route* best = nullptr;
+            for(Route& r : table[network]){
                 if(r.best_path){
-                    best = r;
+                    best = &r;
                     break;
                 }
             }
-            if(best == nullopt){
+            if(best == nullptr){
                 /* raise Best PathNotExist */
                 new_route.best_path = true;
                 table[network].push_back(new_route);
