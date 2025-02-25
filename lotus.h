@@ -20,7 +20,6 @@ class LOTUS{
 protected:
     queue<Message> message_queue;
     vector<Connection> connection_list;
-    map<ASNumber, vector<ASNumber>> public_aspa_list;
 
 public:
     ASClassList as_class_list;
