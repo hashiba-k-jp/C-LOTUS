@@ -48,6 +48,20 @@ public:
         }
     }
 
+    /* OVERRIDE THIS FUNCTION TO SHOW SECURITY POLICIES */
+    void show_route(const Route r){
+        if(r.best_path){
+            std::cout << "  \033[32m>\033[39m ";
+        }else{
+            std::cout << "    ";
+        }
+        std::cout << "\033[1mLocPrf:\033[0m "    << std::setw(4) << r.LocPrf << ", ";
+        std::cout << "\033[1mcome_from\033[0m: " << std::setw(7) << r.come_from << ", ";
+        std::cout << "\033[1mpath\033[0m: "      << string_path(r.path) << "\n";
+        // std::cout << "\033[1mpath\033[0m:"       << r.security_policy << "\n";
+        return;
+    }
+
     void show_AS(void){
         std::cout << "====================" << "\n";
         std::cout << "\033[1mAS NUMBER\033[0m : \033[36m" << as_number << "\033[39m\n";
@@ -62,14 +76,7 @@ public:
         for(auto it = routing_table.table.begin(); it != routing_table.table.end(); it++){
             std::cout << "  " << it->first << "\n";
             for(const Route& r : it->second){
-                if(r.best_path){
-                    std::cout << "  \033[32m>\033[39m ";
-                }else{
-                    std::cout << "    ";
-                }
-                std::cout << "\033[1mLocPrf:\033[0m " << std::setw(4) << r.LocPrf << ", ";
-                std::cout << "\033[1mcome_from\033[0m: " << std::setw(7) << r.come_from << ", ";
-                std::cout << "\033[1mpath\033[0m: " << string_path(r.path) << "\n";
+                show_route(r);
             }
         }
         std::cout << "====================" << "\n";

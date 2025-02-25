@@ -39,6 +39,46 @@ public:
         return best_route_list;
     }
 
+    /* OVERRIDE THIS FUNCTION TO ADD SECURITY POLICIES */
+    pair<bool, optional<RouteDiff>> update_by_security_policy(Policy p, Route new_route, Route best){
+        // If the best route is not decided, return the pair of **TRUE** and any RouteDiff (RouteDiff should discarded in call function).
+        // otherwise, return the pair of false and RouteDiff (nullopt is acceptable if no RouteDiff).
+        // ** true means "continue" in call function.
+        switch(p) {
+            // case Policy::SomeSecurityPolicy: // may define another function to handle security policy.
+            //     break;
+            default:
+                // If all Policy are not covered in this switch-case (except for defalut Policy::LocPrf and Policy::PathLength),
+                // this program raise error as follows.
+                throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
+        }
+        return {false, nullopt};
+    }
+
+    /* OVERRIDE THIS FUNCTION TO ADD SECURITY POLICIES */
+    /* BE SURE THAT THE ROUTE STRUCTURE HAS CORRESPONDING MEMBER */
+    Route new_route_security_validation(Route r, Message update_msg){
+        // if(contains(r.policy, Policy::SomeSecurityPolicy1)){
+        //     Route["<security_policy1>"] = some_security_validation_function1(r);
+        // }
+        // if(contains(r.policy, Policy::SomeSecurityPolicy2)){
+        //     Route["<security_policy2>"] = some_security_validation_function2(r);
+        // }
+        // ...
+        return r;
+    }
+
+    bool security_check(Route r){
+        // switch(some_security_validation_function(r)){
+        //     case "Invalid":
+        //         return false;
+        //     default:
+        //         return true;
+        // }
+        return true;
+    }
+
+
     optional<RouteDiff> update(Message update_msg){
         IPAddress network  = *update_msg.address;
         Path path          = *update_msg.path;
@@ -50,6 +90,9 @@ public:
             case ComeFrom::Provider: LocPrf = 50;  break;
         }
         Route new_route = Route{path, come_from, LocPrf, false};
+
+        new_route = new_route_security_validation(new_route, update_msg);
+
         if(table.count(network) > 0){ /* when the network already has several routes. */
             Route* best = nullptr;
             for(Route& r : table[network]){
@@ -59,12 +102,18 @@ public:
                 }
             }
             if(best == nullptr){
-                /* raise Best PathNotExist */
-                new_route.best_path = true;
-                table[network].push_back(new_route);
-                return nullopt; /* assert False */
+                /* raise BestPathNotExist */
+                if(!security_check(new_route)){
+                    new_route.best_path = false;
+                    return nullopt;
+                }else{
+                    new_route.best_path = true;
+                    table[network].push_back(new_route);
+                    return RouteDiff{come_from, path, network};
+                }
             }else{
                 for(const Policy& p : policy){
+                    int new_length, best_length;
                     switch(p) {
                         case Policy::LocPrf:
                             if(new_route.LocPrf > best->LocPrf){
@@ -80,8 +129,8 @@ public:
                             }
                             break;
                         case Policy::PathLength:
-                            int new_length = new_route.path.size();
-                            int best_length = best->path.size();
+                            new_length = new_route.path.size();
+                            best_length = best->path.size();
                             if(new_length < best_length){
                                 new_route.best_path = true;
                                 best->best_path = false;
@@ -94,13 +143,28 @@ public:
                                 return nullopt;
                             }
                             break;
+                        default: /* security policies */
+                            pair<bool, optional<RouteDiff>> security_policy_res = update_by_security_policy(p, new_route, *best);
+                            if(security_policy_res.first){
+                                 continue;
+                            }else{
+                                 return security_policy_res.second;
+                            }
+                            break;
                     }
                 }
             }
         }else{ /* when the network DOES NOT HAVE any routes. */
-            new_route.best_path = true;
-            table[network] = {new_route};
-            return RouteDiff{come_from, path, network};
+            // SECURITY CHECK;
+            if(security_check(new_route)){
+                new_route.best_path = true;
+                table[network].push_back(new_route);
+                return RouteDiff{come_from, path, network};
+            }else{
+                new_route.best_path = false;
+                table[network].push_back(new_route);
+                return nullopt;
+            }
         }
         return nullopt; /* assert False*/
     }
