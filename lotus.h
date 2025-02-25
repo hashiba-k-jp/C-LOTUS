@@ -23,7 +23,7 @@ protected:
     map<ASNumber, vector<ASNumber>> public_aspa_list;
 
 public:
-    ASCLassList as_class_list;
+    ASClassList as_class_list;
 
 public:
     void add_AS(ASNumber asn){
@@ -251,7 +251,7 @@ public:
 
                 /* AS LIST */
                 int index = imported["IP_gen_seed"].as<int>();
-                ASCLassList new_as_class_list{index};
+                ASClassList new_as_class_list{index};
                 YAML::Node as_list = imported["AS_list"];
                 for(const auto& as_node : as_list){
                     ASNumber as_number = as_node["AS"].as<ASNumber>();
@@ -331,7 +331,7 @@ public:
         // }
 
         /* AS LIST */
-        for(const auto& it : YAML::convert<ASCLassList>::encode(as_class_list)){
+        for(const auto& it : YAML::convert<ASClassList>::encode(as_class_list)){
             export_data[it.first] = it.second;
         }
         /* CONNECTION LIST */

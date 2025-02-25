@@ -142,13 +142,13 @@ public:
 };
 
 
-class ASCLassList{
+class ASClassList{
 public:
     IPAddressGenerator ip_gen = IPAddressGenerator{};
     map<ASNumber, ASClass> class_list = {};
 
 public:
-    ASCLassList(int index=0){
+    ASClassList(int index=0){
         this->class_list = {};
         this->ip_gen = IPAddressGenerator(index);
     }
@@ -216,8 +216,8 @@ namespace YAML{
     };
 
     template<>
-    struct convert<ASCLassList> {
-        static Node encode(const ASCLassList& as_class_list) {
+    struct convert<ASClassList> {
+        static Node encode(const ASClassList& as_class_list) {
             Node node;
             for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
                 node["AS_list"].push_back(it->second);
@@ -225,7 +225,7 @@ namespace YAML{
             node["IP_gen_seed"] = as_class_list.ip_gen.index;
             return node;
         }
-        static bool decode(const Node& node, ASCLassList& as_class_list) {
+        static bool decode(const Node& node, ASClassList& as_class_list) {
             if(!node.IsSequence()){
                 return false;
             }
