@@ -16,29 +16,45 @@ using namespace std;
 /***
  *** For safety typing
  ***/
-// struct ASNumber{ int asn; };
 using ASNumber = int;
-// struct IPAddress{
-//     string address;
-//     bool operator<(const IPAddress& other) const{
-//         return address < other.address;
-//     }
-// };
 using IPAddress = string;
 
 /***
  *** enum definitions
  ***/
-enum class MessageType{ Init, Update };
-enum class ConnectionType{ Peer, Down };
-enum class ComeFrom{ Customer, Peer, Provider };
-enum class DefaultPolicy{ LocPrf, PathLength };
-using Policy = DefaultPolicy;
-/* // For future extensions:
- * enum class ExtendedPolicyASPA { ASPA };
- * enum class ExtendedPolicyISEC { ISEC };
- * using Policy = std::variant<Policy, ASPA, ISEC>;
- */
+#define MESSAGE_TYPE X(Init) X(Update)
+#define CONNECTION_TYPE X(Peer) X(Down)
+#define COMEFROM X(Customer) X(Peer) X(Provider)
+#define POLICY X(LocPrf) X(PathLength) X(Aspa)
+
+#define CREATE_ENUM_CLASS(ClassName, EnumValues) \
+enum class ClassName{ \
+    EnumValues\
+};
+#define X(name) name,
+CREATE_ENUM_CLASS(MessageType, MESSAGE_TYPE)
+CREATE_ENUM_CLASS(ConnectionType, CONNECTION_TYPE)
+CREATE_ENUM_CLASS(ComeFrom, COMEFROM)
+CREATE_ENUM_CLASS(Policy, POLICY)
+#undef X
+
+#define OPERATOR_COUT(ClassName, EnumValues)\
+std::ostream& operator<<(std::ostream& os, ClassName value) {\
+    switch (value) {\
+        EnumValues\
+    }\
+    return os;\
+}
+
+#define X(name) case MessageType::name: os << #name; break;
+OPERATOR_COUT(MessageType, MESSAGE_TYPE)
+#define X(name) case ConnectionType::name: os << #name; break;
+OPERATOR_COUT(ConnectionType, CONNECTION_TYPE)
+#define X(name) case ComeFrom::name: os << #name; break;
+OPERATOR_COUT(ComeFrom, COMEFROM)
+#define X(name) case Policy::name: os << #name; break;
+OPERATOR_COUT(Policy, POLICY)
+#undef X
 
 namespace YAML{
     template<>
@@ -46,24 +62,19 @@ namespace YAML{
         static Node encode(const MessageType& msg_type){
             Node node;
             switch(msg_type) {
-                case MessageType::Init:   node = "init"; break;
-                case MessageType::Update: node = "update"; break;
+                #define X(name) case MessageType::name: node = #name; break;
+                MESSAGE_TYPE
+                #undef X
             }
             return node;
         }
-        static bool decode(const Node& node, MessageType& msg_type){
-            if(!node.IsScalar()){
-                return false;
-            }
+        static bool decode(const Node& node, MessageType& value){
+            if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            if(s == "init"){
-                msg_type = MessageType::Init;
-            }else if(s == "update"){
-                msg_type = MessageType::Update;
-            }else{
-                return false;
-            }
-            return true;
+            #define X(name) if(s == #name){ value = MessageType::name; return true; }
+            MESSAGE_TYPE
+            #undef X
+            return false;
         }
     };
 
@@ -72,24 +83,19 @@ namespace YAML{
         static Node encode(const ConnectionType& c_type){
             Node node;
             switch(c_type) {
-                case ConnectionType::Peer: node = "peer"; break;
-                case ConnectionType::Down: node = "down"; break;
+                #define X(name) case ConnectionType::name: node = #name; break;
+                CONNECTION_TYPE
+                #undef X
             }
             return node;
         }
-        static bool decode(const Node& node, ConnectionType& c_type){
-            if(!node.IsScalar()){
-                return false;
-            }
+        static bool decode(const Node& node, ConnectionType& value){
+            if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            if(s == "peer"){
-                c_type = ConnectionType::Peer;
-            }else if(s == "down"){
-                c_type = ConnectionType::Down;
-            }else{
-                return false;
-            }
-            return true;
+            #define X(name) if(s == #name){ value = ConnectionType::name; return true; }
+            CONNECTION_TYPE
+            #undef X
+            return false;
         }
     };
 
@@ -98,26 +104,18 @@ namespace YAML{
         static Node encode(const ComeFrom& come_from){
             Node node;
             switch(come_from) {
-                case ComeFrom::Provider: node = "provider"; break;
-                case ComeFrom::Peer:     node = "peer"; break;
-                case ComeFrom::Customer: node = "customer"; break;
+                #define X(name) case ComeFrom::name: node = #name; break;
+                COMEFROM
+                #undef X
             }
             return node;
         }
-        static bool decode(const Node& node, ComeFrom& come_from){
-            if(!node.IsScalar()){
-                return false;
-            }
+        static bool decode(const Node& node, ComeFrom& value){
+            if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            if(s == "provider"){
-                come_from = ComeFrom::Provider;
-            }else if(s == "peer"){
-                come_from = ComeFrom::Peer;
-            }else if(s == "customer"){
-                come_from = ComeFrom::Customer;
-            }else{
-                return false;
-            }
+            #define X(name) if(s == #name){ value = ComeFrom::name; return true; }
+            COMEFROM
+            #undef X
             return true;
         }
     };
@@ -127,24 +125,19 @@ namespace YAML{
         static Node encode(const Policy& policy){
             Node node;
             switch(policy) {
-                case Policy::LocPrf:     node = "LocPrf"; break;
-                case Policy::PathLength: node = "PathLength"; break;
+                #define X(name) case Policy::name: node = #name; break;
+                POLICY
+                #undef X
             }
             return node;
         }
-        static bool decode(const Node& node, Policy& policy){
-            if(!node.IsScalar()){
-                return false;
-            }
+        static bool decode(const Node& node, Policy& value){
+            if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            if(s == "LocPrf"){
-                policy = Policy::LocPrf;
-            }else if(s == "PathLength"){
-                policy = Policy::PathLength;
-            }else{
-                return false;
-            }
-            return true;
+            #define X(name) if(s == #name){ value = Policy::name; return true; }
+            POLICY
+            #undef X
+            return false;
         }
     };
 
@@ -158,57 +151,13 @@ namespace YAML{
             return node;
         }
         static bool decode(const Node& node, std::vector<Policy>& policy_list) {
-            if(!node.IsSequence())
-                return false;
+            if(!node.IsSequence()){ return false; }
             for (const auto& n : node) {
                 policy_list.push_back(n.as<Policy>());
             }
             return true;
         }
     };
-}
-
-std::ostream& operator<<(std::ostream& os, MessageType mt) {
-    switch (mt) {
-        case MessageType::Init: os << "Init"; break;
-        case MessageType::Update: os << "Update"; break;
-        default: os << "Unknown"; break;
-    }
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, ConnectionType ct) {
-    switch (ct) {
-        case ConnectionType::Peer: os << "Peer"; break;
-        case ConnectionType::Down: os << "Down"; break;
-        default: os << "Unknown"; break;
-    }
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, ComeFrom cf) {
-    switch (cf) {
-        case ComeFrom::Customer: os << "Customer"; break;
-        case ComeFrom::Peer    : os << "Peer";     break;
-        case ComeFrom::Provider: os << "Provider"; break;
-        default: os << "Unknown"; break;
-    }
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, DefaultPolicy policy) {
-    switch (policy) {
-        case DefaultPolicy::LocPrf:
-            os << "LocPrf";
-            break;
-        case DefaultPolicy::PathLength:
-            os << "PathLength";
-            break;
-        default:
-            os << "Unknown";
-            break;
-    }
-    return os;
 }
 
 
