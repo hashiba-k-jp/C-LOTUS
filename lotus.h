@@ -388,4 +388,23 @@ public:
         return;
     }
 
+
+    // SECURITY OBJECTS
+    void add_ASPA(ASNumber customer, vector<ASNumber> provider_list){
+        public_aspa_list[customer] = provider_list;
+    }
+
+    void set_ASPV(ASNumber as_number, bool onoff, int priority){
+        get_AS(as_number)->change_ASPV(onoff, priority);
+    }
+
+    void show_ASPA_list(void){
+        std::cout << "--------------------" << "\n";
+        std::cout << "ASPA" << '\n';
+        for(auto it = public_aspa_list.begin(); it != public_aspa_list.end(); it++){
+            std::cout << "  - \033[1mcustomer\033[0m : " << it->first;
+            std::cout << ", \033[1mASPA\033[0m : " << it->second << "\n";
+        }
+        std::cout << "--------------------" << "\n";
+    }
 };
