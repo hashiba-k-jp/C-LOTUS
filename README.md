@@ -10,10 +10,9 @@
 LOTUS stands for Lightweight rOuTing simUlator with aSpa, and is originally implemented by [han9umeda](https://github.com/han9umeda).
 
 In this implementation,
-- the security mechanism will be separated from the basic BGP functions.
 - the almost all objects (e.g. routes, connections, paths, etc...) are defined as structures, not dict.
 - all features is implemented as classes, and interactive use is **not** implemented as in the original one.
-- (may be faster than the implementation in python.)
+- may be faster than the implementation in python.
 
 
 <hr>
@@ -23,7 +22,6 @@ In this implementation,
 LOTUS は Lightweight rOuTing simUlator with aSpa の略であり、元は [han9umeda](https://github.com/han9umeda) によって実装されている。
 
 この実装では、
-- セキュリティ機能は基本的なBGPの実装とは分離されている。
 - ほとんどすべてのオブジェクト（ルート、接続、経路情報など）は、pythonのdict型ではなく構造体として定義されている。
 - すべての機能はクラスとして定義され、元の実装のようにインタラクティブな使用は**できない**。
-- （C++なのでpythonより速いかも？）
+- C++なのでpythonより実行時間が短い。
