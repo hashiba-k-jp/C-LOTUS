@@ -246,6 +246,7 @@ public:
                     IPAddress address = as_node["network_address"].as<IPAddress>();
 
                     RoutingTable routing_table;
+                    optional<ASPV> aspv;
                     for(const auto& r : as_node["routing_table"]){
                         IPAddress route_address = r.first.as<IPAddress>();
                         for(const auto& route : r.second){
@@ -253,7 +254,11 @@ public:
                             ComeFrom come_from = route["come_from"].as<ComeFrom>();
                             int LocPrf = route["LocPrf"].as<int>();
                             bool best_path = route["best_path"].as<bool>();
-                            optional<ASPV> aspv = route["aspv"].as<optional<ASPV>>();
+                            if(route["aspv"]){
+                                aspv = route["aspv"].as<optional<ASPV>>();
+                            }else{
+                                aspv = nullopt;
+                            }
                             Route new_route = Route{path, come_from, LocPrf, best_path, aspv};
                             routing_table.table[route_address].push_back(new_route);
 
