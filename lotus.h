@@ -150,6 +150,10 @@ public:
     }
 
     void run(bool print_progress=false){
+        // Set ASPA to the routing table of all AS classes.
+        for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
+            it->second.routing_table.public_aspa_list = public_aspa_list;
+        }
         int processed_msg_num = 0;
         while(!message_queue.empty()){
             Message& msg = message_queue.front();
@@ -223,23 +227,6 @@ public:
         return;
     }
 
-    /* OVERRIDE THIS FUNCTION (and type if necessary) TO ADD SECURITY OBJECTS */
-    virtual void parse_security_objects(YAML::Node node){
-        return;
-    }
-
-    /* OVERRIDE THIS FUNCTION TO ADD SECURITY POLICIES */
-    virtual optional<Policy> security_policy(string policy_string){
-        return nullopt;
-
-        /* EXAMPLE */
-        // if(policy_string == "ASPA"){
-        //     return Policy::ASPA;
-        // }else{
-        //     return nullopt;
-        // }
-    }
-
     void file_import(string file_path){
         ifstream file(file_path);
         string line;
@@ -266,7 +253,10 @@ public:
                             ComeFrom come_from = route["come_from"].as<ComeFrom>();
                             int LocPrf = route["LocPrf"].as<int>();
                             bool best_path = route["best_path"].as<bool>();
-                            routing_table.table[route_address].push_back(Route{path, come_from, LocPrf, best_path});
+                            optional<ASPV> aspv = route["aspv"].as<optional<ASPV>>();
+                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv};
+                            routing_table.table[route_address].push_back(new_route);
+
                         }
                     }
                     vector<Policy> policy = as_node["policy"].as<vector<Policy>>();
@@ -300,8 +290,15 @@ public:
                     }
                 }
 
-                /* SECURITY OBJECTS (RPKI) */
-                parse_security_objects(imported);
+                /* ASPA */
+                // map<ASNumber, vector<ASNumber>>
+                public_aspa_list = {};
+                for(const auto& aspa_node : imported["ASPA"]){
+                    ASNumber customer = aspa_node.first.as<ASNumber>();
+                    for(const auto& provider : aspa_node.second){
+                        public_aspa_list[customer].push_back(provider.as<ASNumber>());
+                    }
+                }
 
             }catch(YAML::ParserException &e){
                 std::cout << "\033[33m[WARN] The file \"" << file_path << "\" is INVALID as a yaml file.\033[00m" << std::endl;
@@ -341,7 +338,7 @@ public:
         export_data["message"] = message_queue;
 
         /* SECURITY OBJECTS */
-        /* ... */
+        export_data["ASPA"] = public_aspa_list;
 
         std::ofstream fout(file_path_string);
         if (!fout) {

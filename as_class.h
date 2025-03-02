@@ -40,7 +40,7 @@ public:
     ASClass(ASNumber as_number, IPAddress address, vector<Policy> policy={Policy::LocPrf, Policy::PathLength}, optional<RoutingTable> given_routing_table=nullopt){
         this->as_number = as_number;
         this->network_address = address;
-        this->policy = {Policy::LocPrf, Policy::PathLength};
+        this->policy = policy;
         if(given_routing_table == nullopt){
             this->routing_table = RoutingTable{policy, address};
         }else{
@@ -48,7 +48,6 @@ public:
         }
     }
 
-    /* OVERRIDE THIS FUNCTION TO SHOW SECURITY POLICIES */
     void show_route(const Route r){
         if(r.best_path){
             std::cout << "  \033[32m>\033[39m ";
@@ -56,9 +55,14 @@ public:
             std::cout << "    ";
         }
         std::cout << "\033[1mLocPrf:\033[0m "    << std::setw(4) << r.LocPrf << ", ";
-        std::cout << "\033[1mcome_from\033[0m: " << std::setw(7) << r.come_from << ", ";
+        std::cout << "\033[1mcome_from\033[0m: " << std::setw(8) << r.come_from << ", ";
+        if(r.aspv != nullopt){
+            std::cout << "\033[1mASPV\033[0m: "      << std::setw(7) << r.aspv.value() << ", ";
+        }else if(r.aspv == nullopt){
+            std::cout << "\033[1mASPV\033[0m: "      << "-------" << ", ";
+        }
+
         std::cout << "\033[1mpath\033[0m: "      << string_path(r.path) << "\n";
-        // std::cout << "\033[1mpath\033[0m:"       << r.security_policy << "\n";
         return;
     }
 

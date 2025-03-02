@@ -31,6 +31,7 @@ using IPAddress = string;
 #define CONNECTION_TYPE X(Peer) X(Down)
 #define COMEFROM X(Customer) X(Peer) X(Provider)
 #define POLICY X(LocPrf) X(PathLength) X(Aspa)
+#define ASPV_TYPE X(Valid) X(Invalid) X(Unknown)
 
 #define CREATE_ENUM_CLASS(ClassName, EnumValues) \
 enum class ClassName{ \
@@ -41,6 +42,7 @@ CREATE_ENUM_CLASS(MessageType, MESSAGE_TYPE)
 CREATE_ENUM_CLASS(ConnectionType, CONNECTION_TYPE)
 CREATE_ENUM_CLASS(ComeFrom, COMEFROM)
 CREATE_ENUM_CLASS(Policy, POLICY)
+CREATE_ENUM_CLASS(ASPV, ASPV_TYPE)
 #undef X
 
 #define OPERATOR_COUT(ClassName, EnumValues)\
@@ -59,6 +61,8 @@ OPERATOR_COUT(ConnectionType, CONNECTION_TYPE)
 OPERATOR_COUT(ComeFrom, COMEFROM)
 #define X(name) case Policy::name: os << #name; break;
 OPERATOR_COUT(Policy, POLICY)
+#define X(name) case ASPV::name: os << #name; break;
+OPERATOR_COUT(ASPV, ASPV_TYPE)
 #undef X
 
 namespace YAML{
@@ -126,6 +130,27 @@ namespace YAML{
     };
 
     template<>
+    struct convert<ASPV>{
+        static Node encode(const ASPV& aspv){
+            Node node;
+            switch(aspv) {
+                #define X(name) case ASPV::name: node = #name; break;
+                ASPV_TYPE
+                #undef X
+            }
+            return node;
+        }
+        static bool decode(const Node& node, ASPV& value){
+            if(!node.IsScalar()){ return false; }
+            string s = node.as<string>();
+            #define X(name) if(s == #name){ value = ASPV::name; return true; }
+            ASPV_TYPE
+            #undef X
+            return true;
+        }
+    };
+
+    template<>
     struct convert<Policy>{
         static Node encode(const Policy& policy){
             Node node;
@@ -163,6 +188,33 @@ namespace YAML{
             return true;
         }
     };
+
+    template<typename T>
+    struct convert<optional<T>> {
+        static Node encode(const optional<T>& value) {
+            Node node;
+            if(!value){
+                node = Node();
+            } else {
+                node = *value;
+            }
+            return node;
+        }
+        static bool decode(const Node& node, optional<T>& value) {
+            if (!node || node.IsNull()) { // YAMLのnullをチェック
+                value = nullopt;
+                return true;
+            }
+
+            try {
+                value = node.as<T>(); // 型Tに変換
+                return true;
+            } catch (const YAML::BadConversion&) {
+                return false; // 変換失敗時はfalseを返す
+            }
+        }
+    };
+
 }
 
 
@@ -250,6 +302,7 @@ struct Route{
     ComeFrom come_from;
     int LocPrf;
     bool best_path;
+    optional<ASPV> aspv;
 };
 
 struct RouteDiff{
@@ -319,6 +372,7 @@ namespace YAML{
             node["come_from"] = r.come_from;
             node["LocPrf"]    = r.LocPrf;
             node["best_path"] = r.best_path;
+            node["aspv"]      = r.aspv;
             return node;
         };
         static bool decode(const Node& node, Route& r){
@@ -329,6 +383,7 @@ namespace YAML{
             r.come_from = node["come_from"].as<ComeFrom>();
             r.LocPrf    = node["LocPrf"].as<int>();
             r.best_path = node["best_path"].as<bool>();
+            r.aspv      = node["aspv"].as<ASPV>();
             return true;
         }
     };
@@ -420,4 +475,15 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec) {
     os << "]";
     return os;
 }
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const optional<T>& val) {
+    if(val == nullopt){
+        os << "Null";
+    }else{
+        os << val;
+    }
+    return os;
+}
+
 #endif
