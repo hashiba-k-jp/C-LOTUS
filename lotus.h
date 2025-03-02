@@ -396,6 +396,38 @@ public:
         public_aspa_list[customer] = provider_list;
     }
 
+    void auto_ASPA(ASNumber origin_customer, int hop_num){
+        ASClass* customer_as_class = get_AS(origin_customer);
+        if(customer_as_class == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << origin_customer << " has NOT been registered, the ASPA CANNOT be added.\033[00m" << std::endl;
+            return;
+        }
+        vector<ASNumber> customer_as_list = {origin_customer};
+
+        while(hop_num != 0 && customer_as_list.size() != 0){
+            vector<ASNumber> next_customer_as_list = {};
+            for(ASNumber& customer : customer_as_list){
+                vector<Connection> c_list = get_connection_with(customer);
+                vector<ASNumber> provider_list = {};
+                for(const Connection& connection : c_list){
+                    if(as_a_is_what_on_c(customer, connection) == ComeFrom::Customer){
+                        provider_list.push_back(connection.src);
+                    }
+                }
+                next_customer_as_list.insert(next_customer_as_list.end(), provider_list.begin(), provider_list.end());
+                if(provider_list.size() == 0){
+                    public_aspa_list[customer] = {0};
+                }else{
+                    public_aspa_list[customer] = provider_list;
+                }
+            }
+            hop_num -= 1;
+            sort(customer_as_list.begin(), customer_as_list.end());
+            sort(next_customer_as_list.begin(), next_customer_as_list.end());
+            set_union(customer_as_list.begin(), customer_as_list.end(), next_customer_as_list.begin(), next_customer_as_list.end(), back_inserter(customer_as_list));
+        }
+    }
+
     void set_ASPV(ASNumber as_number, bool onoff, int priority){
         get_AS(as_number)->change_ASPV(onoff, priority);
     }
