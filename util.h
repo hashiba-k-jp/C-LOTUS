@@ -13,6 +13,11 @@
 
 using namespace std;
 
+bool caseInsensitiveCompare(const std::string& str1, const std::string& str2) {
+    return std::equal(str1.begin(), str1.end(), str2.begin(),
+                      [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); });
+}
+
 /***
  *** For safety typing
  ***/
@@ -71,7 +76,7 @@ namespace YAML{
         static bool decode(const Node& node, MessageType& value){
             if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            #define X(name) if(s == #name){ value = MessageType::name; return true; }
+            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = MessageType::name; return true; }
             MESSAGE_TYPE
             #undef X
             return false;
@@ -92,7 +97,7 @@ namespace YAML{
         static bool decode(const Node& node, ConnectionType& value){
             if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            #define X(name) if(s == #name){ value = ConnectionType::name; return true; }
+            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = ConnectionType::name; return true; }
             CONNECTION_TYPE
             #undef X
             return false;
@@ -113,7 +118,7 @@ namespace YAML{
         static bool decode(const Node& node, ComeFrom& value){
             if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            #define X(name) if(s == #name){ value = ComeFrom::name; return true; }
+            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = ComeFrom::name; return true; }
             COMEFROM
             #undef X
             return true;
@@ -134,7 +139,7 @@ namespace YAML{
         static bool decode(const Node& node, Policy& value){
             if(!node.IsScalar()){ return false; }
             string s = node.as<string>();
-            #define X(name) if(s == #name){ value = Policy::name; return true; }
+            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = Policy::name; return true; }
             POLICY
             #undef X
             return false;
@@ -202,7 +207,7 @@ Path parse_path(string path_string){
         as_string_list.push_back(token);
     }
     for(const string& as_string : as_string_list){
-        if(as_string == "i"){
+        if(caseInsensitiveCompare(as_string, "I")){
             path.push_back(Itself::I);
         }else{
             path.push_back(ASNumber(stoi(as_string)));
