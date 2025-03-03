@@ -95,6 +95,29 @@ public:
         return message_queue;
     }
 
+    optional<Path> get_best_path_to(ASNumber origin_as_number, ASNumber destination_as_number){
+        // return the best path from <origin_as_number> to <destination_as_number> if exists, otherwire nullopt.
+        ASClass* origin_as_class = get_AS(origin_as_number);
+        ASClass* destination_as_class = get_AS(destination_as_number);
+        if(origin_as_class == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << origin_as_number << " has NOT been registered.\033[00m" << std::endl;
+            return nullopt;
+        }
+        if(destination_as_class == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << destination_as_number << " has NOT been registered.\033[00m" << std::endl;
+            return nullopt;
+        }
+        IPAddress destination_network = destination_as_class->network_address;
+        if(origin_as_class->routing_table.table.find(destination_network) != origin_as_class->routing_table.table.end()){
+            for(Route& r : origin_as_class->routing_table.table[destination_network]){
+                if(r.best_path){
+                    return r.path;
+                }
+            }
+        }
+        return nullopt;
+    }
+
     void show_messages(void){
         if(message_queue.size() == 0){
             std::cout << "\033[32m[INFO] No messages in the queue.\033[39m" << '\n';
