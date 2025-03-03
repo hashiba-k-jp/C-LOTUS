@@ -43,6 +43,12 @@ int main() {
     /* ADD INIT MESSAGE TO ALL AS */
     LOTUS.add_all_init();
 
+    /* ADD ASPA DATA */
+    LOTUS.add_ASPA(100, {10});
+
+    /* ENABLE ASPV */
+    LOTUS.set_ASPV(1, true, 1);
+
     /* RUN LOTUS (before attack) */
     LOTUS.run();
 

@@ -150,6 +150,10 @@ public:
     }
 
     void run(bool print_progress=false){
+        // Set ASPA to the routing table of all AS classes.
+        for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
+            it->second.routing_table.public_aspa_list = public_aspa_list;
+        }
         int processed_msg_num = 0;
         while(!message_queue.empty()){
             Message& msg = message_queue.front();
@@ -223,23 +227,6 @@ public:
         return;
     }
 
-    /* OVERRIDE THIS FUNCTION (and type if necessary) TO ADD SECURITY OBJECTS */
-    virtual void parse_security_objects(YAML::Node node){
-        return;
-    }
-
-    /* OVERRIDE THIS FUNCTION TO ADD SECURITY POLICIES */
-    virtual optional<Policy> security_policy(string policy_string){
-        return nullopt;
-
-        /* EXAMPLE */
-        // if(policy_string == "ASPA"){
-        //     return Policy::ASPA;
-        // }else{
-        //     return nullopt;
-        // }
-    }
-
     void file_import(string file_path){
         ifstream file(file_path);
         string line;
@@ -259,6 +246,7 @@ public:
                     IPAddress address = as_node["network_address"].as<IPAddress>();
 
                     RoutingTable routing_table;
+                    optional<ASPV> aspv;
                     for(const auto& r : as_node["routing_table"]){
                         IPAddress route_address = r.first.as<IPAddress>();
                         for(const auto& route : r.second){
@@ -266,7 +254,14 @@ public:
                             ComeFrom come_from = route["come_from"].as<ComeFrom>();
                             int LocPrf = route["LocPrf"].as<int>();
                             bool best_path = route["best_path"].as<bool>();
-                            routing_table.table[route_address].push_back(Route{path, come_from, LocPrf, best_path});
+                            if(route["aspv"]){
+                                aspv = route["aspv"].as<optional<ASPV>>();
+                            }else{
+                                aspv = nullopt;
+                            }
+                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv};
+                            routing_table.table[route_address].push_back(new_route);
+
                         }
                     }
                     vector<Policy> policy = as_node["policy"].as<vector<Policy>>();
@@ -300,8 +295,15 @@ public:
                     }
                 }
 
-                /* SECURITY OBJECTS (RPKI) */
-                parse_security_objects(imported);
+                /* ASPA */
+                // map<ASNumber, vector<ASNumber>>
+                public_aspa_list = {};
+                for(const auto& aspa_node : imported["ASPA"]){
+                    ASNumber customer = aspa_node.first.as<ASNumber>();
+                    for(const auto& provider : aspa_node.second){
+                        public_aspa_list[customer].push_back(provider.as<ASNumber>());
+                    }
+                }
 
             }catch(YAML::ParserException &e){
                 std::cout << "\033[33m[WARN] The file \"" << file_path << "\" is INVALID as a yaml file.\033[00m" << std::endl;
@@ -341,7 +343,7 @@ public:
         export_data["message"] = message_queue;
 
         /* SECURITY OBJECTS */
-        /* ... */
+        export_data["ASPA"] = public_aspa_list;
 
         std::ofstream fout(file_path_string);
         if (!fout) {
@@ -388,4 +390,55 @@ public:
         return;
     }
 
+
+    // SECURITY OBJECTS
+    void add_ASPA(ASNumber customer, vector<ASNumber> provider_list){
+        public_aspa_list[customer] = provider_list;
+    }
+
+    void auto_ASPA(ASNumber origin_customer, int hop_num){
+        ASClass* customer_as_class = get_AS(origin_customer);
+        if(customer_as_class == nullptr){
+            std::cout << "\033[33m[WARN] Since AS " << origin_customer << " has NOT been registered, the ASPA CANNOT be added.\033[00m" << std::endl;
+            return;
+        }
+        vector<ASNumber> customer_as_list = {origin_customer};
+
+        while(hop_num != 0 && customer_as_list.size() != 0){
+            vector<ASNumber> next_customer_as_list = {};
+            for(ASNumber& customer : customer_as_list){
+                vector<Connection> c_list = get_connection_with(customer);
+                vector<ASNumber> provider_list = {};
+                for(const Connection& connection : c_list){
+                    if(as_a_is_what_on_c(customer, connection) == ComeFrom::Customer){
+                        provider_list.push_back(connection.src);
+                    }
+                }
+                next_customer_as_list.insert(next_customer_as_list.end(), provider_list.begin(), provider_list.end());
+                if(provider_list.size() == 0){
+                    public_aspa_list[customer] = {0};
+                }else{
+                    public_aspa_list[customer] = provider_list;
+                }
+            }
+            hop_num -= 1;
+            sort(customer_as_list.begin(), customer_as_list.end());
+            sort(next_customer_as_list.begin(), next_customer_as_list.end());
+            set_union(customer_as_list.begin(), customer_as_list.end(), next_customer_as_list.begin(), next_customer_as_list.end(), back_inserter(customer_as_list));
+        }
+    }
+
+    void set_ASPV(ASNumber as_number, bool onoff, int priority){
+        get_AS(as_number)->change_ASPV(onoff, priority);
+    }
+
+    void show_ASPA_list(void){
+        std::cout << "--------------------" << "\n";
+        std::cout << "ASPA" << '\n';
+        for(auto it = public_aspa_list.begin(); it != public_aspa_list.end(); it++){
+            std::cout << "  - \033[1mcustomer\033[0m : " << it->first;
+            std::cout << ", \033[1mASPA\033[0m : " << it->second << "\n";
+        }
+        std::cout << "--------------------" << "\n";
+    }
 };
