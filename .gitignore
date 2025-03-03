@@ -1,3 +1,4 @@
 *.o
 main
 todo.txt
+exp/
