@@ -8,6 +8,7 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <variant>
 
 #include <yaml-cpp/yaml.h>
 
