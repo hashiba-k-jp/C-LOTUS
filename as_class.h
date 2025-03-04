@@ -152,6 +152,15 @@ public:
         routing_table.policy = policy;
         return;
     }
+
+    void change_policy(bool onoff, Policy p, int priority){
+        if(onoff /* == true */){
+            policy.insert(policy.begin() + (priority - 1), p);
+        }else{
+            auto erase_p = find(policy.begin(), policy.end(), p);
+            policy.erase(erase_p);
+        }
+    }
 };
 
 

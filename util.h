@@ -31,7 +31,7 @@ using IPAddress = string;
 #define MESSAGE_TYPE X(Init) X(Update)
 #define CONNECTION_TYPE X(Peer) X(Down)
 #define COMEFROM X(Customer) X(Peer) X(Provider)
-#define POLICY X(LocPrf) X(PathLength) X(Aspa)
+#define POLICY X(LocPrf) X(PathLength) X(Aspa) X(Isec)
 #define ASPV_TYPE X(Valid) X(Invalid) X(Unknown)
 
 #define CREATE_ENUM_CLASS(ClassName, EnumValues) \
