@@ -149,15 +149,6 @@ public:
         }
     }
 
-    void change_ASPV(bool onoff, int priority){
-        policy = {Policy::LocPrf, Policy::PathLength};
-        if(onoff == true){
-            policy.insert(policy.begin() + (priority - 1), Policy::Aspa);
-        }
-        routing_table.policy = policy;
-        return;
-    }
-
     void change_policy(bool onoff, Policy p, int priority){
         if(onoff /* == true */){
             policy.insert(policy.begin() + (priority - 1), p);

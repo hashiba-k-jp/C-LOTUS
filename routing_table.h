@@ -250,7 +250,7 @@ public:
             }
         }else{ /* when the network DOES NOT HAVE any routes. */
             // SECURITY CHECK;
-            if(policy.front() == Policy::Aspa && new_route.aspv == ASPV::Invalid){
+            if(contains(policy, Policy::Aspa) && new_route.aspv == ASPV::Invalid){
                 new_route.best_path = false;
                 table[network].push_back(new_route);
                 return nullopt;

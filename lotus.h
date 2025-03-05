@@ -478,7 +478,7 @@ public:
     }
 
     void set_ASPV(ASNumber as_number, bool onoff, int priority){
-        get_AS(as_number)->change_ASPV(onoff, priority);
+        get_AS(as_number)->change_policy(onoff, Policy::Aspa, priority);
     }
 
     void show_ASPA_list(void){
