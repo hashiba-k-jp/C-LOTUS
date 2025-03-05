@@ -478,6 +478,11 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec) {
 }
 
 template <typename T>
+bool contains(const std::vector<T>& vec, const T& value) {
+    return std::find(vec.begin(), vec.end(), value) != vec.end();
+}
+
+template <typename T>
 std::ostream& operator<<(std::ostream& os, const optional<T>& val) {
     if(val == nullopt){
         os << "Null";
