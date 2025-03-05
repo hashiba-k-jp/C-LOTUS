@@ -287,7 +287,12 @@ public:
                             }else{
                                 aspv = nullopt;
                             }
-                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv, nullopt};
+                            if(route["isec_v"]){
+                                isec_v = route["isec_v"].as<optional<Isec>>();
+                            }else{
+                                isec_v = nullopt;
+                            }
+                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv, isec_v};
                             routing_table.table[route_address].push_back(new_route);
 
                         }
@@ -333,6 +338,20 @@ public:
                     }
                 }
 
+                /* BGP-iSec */
+                isec_adopted_as_list = {};
+                for(const auto& as_number : imported["isec_adopted_as_list"]){
+                    isec_adopted_as_list.push_back(as_number.as<ASNumber>());
+                }
+
+                public_ProConID = {};
+                for(const auto& isec_node : imported["public_ProConID"]){
+                    ASNumber customer = isec_node.first.as<ASNumber>();
+                    for(const auto& provider : isec_node.second){
+                        public_ProConID[customer].push_back(provider.as<ASNumber>());
+                    }
+                }
+
             }catch(YAML::ParserException &e){
                 std::cout << "\033[33m[WARN] The file \"" << file_path << "\" is INVALID as a yaml file.\033[00m" << std::endl;
                 std::cerr << "\033[33m       " << e.what() << "\033[00m\n";
@@ -372,6 +391,8 @@ public:
 
         /* SECURITY OBJECTS */
         export_data["ASPA"] = public_aspa_list;
+        export_data["isec_adopted_as_list"] = isec_adopted_as_list;
+        export_data["public_ProConID"] = public_ProConID;
 
         std::ofstream fout(file_path_string);
         if (!fout) {

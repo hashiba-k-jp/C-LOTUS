@@ -156,6 +156,27 @@ namespace YAML{
     };
 
     template<>
+    struct convert<Isec>{
+        static Node encode(const Isec& isec_v){
+            Node node;
+            switch(isec_v) {
+                #define X(name) case Isec::name: node = #name; break;
+                ISEC_TYPE
+                #undef X
+            }
+            return node;
+        }
+        static bool decode(const Node& node, Isec& value){
+            if(!node.IsScalar()){ return false; }
+            string s = node.as<string>();
+            #define X(name) if(s == #name){ value = Isec::name; return true; }
+            ISEC_TYPE
+            #undef X
+            return true;
+        }
+    };
+
+    template<>
     struct convert<Policy>{
         static Node encode(const Policy& policy){
             Node node;
@@ -379,6 +400,7 @@ namespace YAML{
             node["LocPrf"]    = r.LocPrf;
             node["best_path"] = r.best_path;
             node["aspv"]      = r.aspv;
+            node["isec_v"]    = r.isec_v;
             return node;
         };
         static bool decode(const Node& node, Route& r){
@@ -390,6 +412,7 @@ namespace YAML{
             r.LocPrf    = node["LocPrf"].as<int>();
             r.best_path = node["best_path"].as<bool>();
             r.aspv      = node["aspv"].as<ASPV>();
+            r.isec_v    = node["isec_v"].as<Isec>();
             return true;
         }
     };
