@@ -21,6 +21,8 @@ protected:
     queue<Message> message_queue;
     vector<Connection> connection_list;
     map<ASNumber, vector<ASNumber>> public_aspa_list;
+    vector<ASNumber> isec_adopted_as_list;
+    map<ASNumber, vector<ASNumber>> public_ProConID;
 
 public:
     ASClassList as_class_list;
@@ -176,6 +178,8 @@ public:
         // Set ASPA to the routing table of all AS classes.
         for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
             it->second.routing_table.public_aspa_list = public_aspa_list;
+            it->second.routing_table.isec_adopted_as_list = isec_adopted_as_list;
+            it->second.routing_table.public_ProConID = public_ProConID;
         }
         int processed_msg_num = 0;
         while(!message_queue.empty()){
@@ -270,6 +274,7 @@ public:
 
                     RoutingTable routing_table;
                     optional<ASPV> aspv;
+                    optional<Isec> isec_v;
                     for(const auto& r : as_node["routing_table"]){
                         IPAddress route_address = r.first.as<IPAddress>();
                         for(const auto& route : r.second){
@@ -282,7 +287,12 @@ public:
                             }else{
                                 aspv = nullopt;
                             }
-                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv};
+                            if(route["isec_v"]){
+                                isec_v = route["isec_v"].as<optional<Isec>>();
+                            }else{
+                                isec_v = nullopt;
+                            }
+                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv, isec_v};
                             routing_table.table[route_address].push_back(new_route);
 
                         }
@@ -328,6 +338,20 @@ public:
                     }
                 }
 
+                /* BGP-iSec */
+                isec_adopted_as_list = {};
+                for(const auto& as_number : imported["isec_adopted_as_list"]){
+                    isec_adopted_as_list.push_back(as_number.as<ASNumber>());
+                }
+
+                public_ProConID = {};
+                for(const auto& isec_node : imported["public_ProConID"]){
+                    ASNumber customer = isec_node.first.as<ASNumber>();
+                    for(const auto& provider : isec_node.second){
+                        public_ProConID[customer].push_back(provider.as<ASNumber>());
+                    }
+                }
+
             }catch(YAML::ParserException &e){
                 std::cout << "\033[33m[WARN] The file \"" << file_path << "\" is INVALID as a yaml file.\033[00m" << std::endl;
                 std::cerr << "\033[33m       " << e.what() << "\033[00m\n";
@@ -367,6 +391,8 @@ public:
 
         /* SECURITY OBJECTS */
         export_data["ASPA"] = public_aspa_list;
+        export_data["isec_adopted_as_list"] = isec_adopted_as_list;
+        export_data["public_ProConID"] = public_ProConID;
 
         std::ofstream fout(file_path_string);
         if (!fout) {
@@ -463,5 +489,93 @@ public:
             std::cout << ", \033[1mASPA\033[0m : " << it->second << "\n";
         }
         std::cout << "--------------------" << "\n";
+    }
+
+    void switch_adoption_iSec(ASNumber as_number, bool onoff, int priority){
+        if(onoff){
+            if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), as_number) == isec_adopted_as_list.end()){
+                isec_adopted_as_list.push_back(as_number);
+                get_AS(as_number)->change_policy(onoff, Policy::Isec, priority);
+            }else{
+                std::cout << "\033[33m[WARN] The AS " << as_number << " has already published its adoption of BGP-iSec.\033[00m" << std::endl;
+            }
+        }else{
+            auto it = remove(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), as_number);
+            if (it != isec_adopted_as_list.end()) {
+                isec_adopted_as_list.erase(it, isec_adopted_as_list.end());
+                get_AS(as_number)->change_policy(onoff, Policy::Isec, priority);
+            } else {
+                std::cout << "\033[33m[WARN] The AS " << as_number << " has not adopted BGP-iSec.\033[00m" << std::endl;
+            }
+        }
+        return;
+    }
+
+    void add_ProConID(ASNumber as_number){
+        if (as_class_list.class_list.find(as_number) == as_class_list.class_list.end()){
+            std::cout << "\033[33m[WARN] The AS " << as_number << " has NOT been registered.\033[00m" << std::endl;
+            return;
+        }
+        if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), as_number) == isec_adopted_as_list.end()){
+            std::cout << "\033[33m[WARN] Since the AS " << as_number << " has not adopted BGP-iSec, the ProConID does not exist.\033[00m" << std::endl;
+            return;
+        }
+
+        vector<ASNumber> ProConID_list = {};
+        vector<ASNumber> provider_list = {as_number};
+
+        while(0 < provider_list.size()){
+            ASNumber customer = provider_list.front();
+            provider_list.erase(provider_list.begin());
+
+            vector<ASNumber> next_provider_list = {};
+
+            vector<Connection> c_list = get_connection_with(customer);
+            for(const Connection& connection : c_list){
+                if(as_a_is_what_on_c(customer, connection) == ComeFrom::Customer){
+                    next_provider_list.push_back(connection.src);
+                }
+            }
+
+            for(auto it = next_provider_list.begin(); it != next_provider_list.end();){
+                // std::cout << *it << '\n';
+                if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), *it) != isec_adopted_as_list.end()){
+                    ProConID_list.push_back(*it);
+                    it = next_provider_list.erase(it);
+                }else{
+                    ++it;
+                }
+            }
+
+            // here, next_provider_list is the list of NON adopting provider as.
+            sort(next_provider_list.begin(), next_provider_list.end());
+            sort(provider_list.begin(), provider_list.end());
+            set_union(provider_list.begin(), provider_list.end(), next_provider_list.begin(), next_provider_list.end(), back_inserter(provider_list));
+            provider_list.erase(unique(provider_list.begin(), provider_list.end()), provider_list.end());
+        }
+        public_ProConID[as_number] = ProConID_list;
+        return;
+    }
+
+    void show_isec_adopting(void){
+        std::cout << "--------------------" << "\n";
+        std::cout << "BGP-iSec Adopting AS" << "\n  ";
+        sort(isec_adopted_as_list.begin(), isec_adopted_as_list.end());
+        for(const ASNumber as_number : isec_adopted_as_list){
+            std::cout << as_number << ", ";
+        }
+        std::cout << "\b\b\x1b[K\n--------------------\n";
+        return;
+    }
+
+    void show_ProConID_list(void){
+        std::cout << "--------------------" << "\n";
+        std::cout << "ProConID" << '\n';
+        for(auto it = public_ProConID.begin(); it != public_ProConID.end(); it++){
+            std::cout << "  - \033[1mcustomer\033[0m : " << it->first;
+            std::cout << ", \033[1mProConID\033[0m : " << it->second << "\n";
+        }
+        std::cout << "--------------------" << "\n";
+        return;
     }
 };

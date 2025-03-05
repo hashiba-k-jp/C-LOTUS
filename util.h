@@ -31,8 +31,9 @@ using IPAddress = string;
 #define MESSAGE_TYPE X(Init) X(Update)
 #define CONNECTION_TYPE X(Peer) X(Down)
 #define COMEFROM X(Customer) X(Peer) X(Provider)
-#define POLICY X(LocPrf) X(PathLength) X(Aspa)
+#define POLICY X(LocPrf) X(PathLength) X(Aspa) X(Isec)
 #define ASPV_TYPE X(Valid) X(Invalid) X(Unknown)
+#define ISEC_TYPE X(Valid) X(Invalid) X(Debug)
 
 #define CREATE_ENUM_CLASS(ClassName, EnumValues) \
 enum class ClassName{ \
@@ -44,6 +45,7 @@ CREATE_ENUM_CLASS(ConnectionType, CONNECTION_TYPE)
 CREATE_ENUM_CLASS(ComeFrom, COMEFROM)
 CREATE_ENUM_CLASS(Policy, POLICY)
 CREATE_ENUM_CLASS(ASPV, ASPV_TYPE)
+CREATE_ENUM_CLASS(Isec, ISEC_TYPE)
 #undef X
 
 #define OPERATOR_COUT(ClassName, EnumValues)\
@@ -64,6 +66,8 @@ OPERATOR_COUT(ComeFrom, COMEFROM)
 OPERATOR_COUT(Policy, POLICY)
 #define X(name) case ASPV::name: os << #name; break;
 OPERATOR_COUT(ASPV, ASPV_TYPE)
+#define X(name) case Isec::name: os << #name; break;
+OPERATOR_COUT(Isec, ISEC_TYPE)
 #undef X
 
 namespace YAML{
@@ -146,6 +150,27 @@ namespace YAML{
             string s = node.as<string>();
             #define X(name) if(s == #name){ value = ASPV::name; return true; }
             ASPV_TYPE
+            #undef X
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Isec>{
+        static Node encode(const Isec& isec_v){
+            Node node;
+            switch(isec_v) {
+                #define X(name) case Isec::name: node = #name; break;
+                ISEC_TYPE
+                #undef X
+            }
+            return node;
+        }
+        static bool decode(const Node& node, Isec& value){
+            if(!node.IsScalar()){ return false; }
+            string s = node.as<string>();
+            #define X(name) if(s == #name){ value = Isec::name; return true; }
+            ISEC_TYPE
             #undef X
             return true;
         }
@@ -304,6 +329,7 @@ struct Route{
     int LocPrf;
     bool best_path;
     optional<ASPV> aspv;
+    optional<Isec> isec_v;
 };
 
 struct RouteDiff{
@@ -374,6 +400,7 @@ namespace YAML{
             node["LocPrf"]    = r.LocPrf;
             node["best_path"] = r.best_path;
             node["aspv"]      = r.aspv;
+            node["isec_v"]    = r.isec_v;
             return node;
         };
         static bool decode(const Node& node, Route& r){
@@ -385,6 +412,7 @@ namespace YAML{
             r.LocPrf    = node["LocPrf"].as<int>();
             r.best_path = node["best_path"].as<bool>();
             r.aspv      = node["aspv"].as<ASPV>();
+            r.isec_v    = node["isec_v"].as<Isec>();
             return true;
         }
     };
