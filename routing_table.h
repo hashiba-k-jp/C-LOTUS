@@ -254,11 +254,15 @@ public:
                 new_route.best_path = false;
                 table[network].push_back(new_route);
                 return nullopt;
-            }else{
-                new_route.best_path = true;
-                table[network].push_back(new_route);
-                return RouteDiff{come_from, path, network};
             }
+            if(contains(policy, Policy::Isec) && new_route.isec_v == Isec::Invalid){
+                new_route.best_path = false;
+                table[network].push_back(new_route);
+                return nullopt;
+            }
+            new_route.best_path = true;
+            table[network].push_back(new_route);
+            return RouteDiff{come_from, path, network};
         }
         return nullopt; /* assert False*/
     }
