@@ -33,6 +33,7 @@ using IPAddress = string;
 #define COMEFROM X(Customer) X(Peer) X(Provider)
 #define POLICY X(LocPrf) X(PathLength) X(Aspa) X(Isec)
 #define ASPV_TYPE X(Valid) X(Invalid) X(Unknown)
+#define ISEC_TYPE X(Valid) X(Invalid) X(Debug)
 
 #define CREATE_ENUM_CLASS(ClassName, EnumValues) \
 enum class ClassName{ \
@@ -44,6 +45,7 @@ CREATE_ENUM_CLASS(ConnectionType, CONNECTION_TYPE)
 CREATE_ENUM_CLASS(ComeFrom, COMEFROM)
 CREATE_ENUM_CLASS(Policy, POLICY)
 CREATE_ENUM_CLASS(ASPV, ASPV_TYPE)
+CREATE_ENUM_CLASS(Isec, ISEC_TYPE)
 #undef X
 
 #define OPERATOR_COUT(ClassName, EnumValues)\
@@ -64,6 +66,8 @@ OPERATOR_COUT(ComeFrom, COMEFROM)
 OPERATOR_COUT(Policy, POLICY)
 #define X(name) case ASPV::name: os << #name; break;
 OPERATOR_COUT(ASPV, ASPV_TYPE)
+#define X(name) case Isec::name: os << #name; break;
+OPERATOR_COUT(Isec, ISEC_TYPE)
 #undef X
 
 namespace YAML{
@@ -304,6 +308,7 @@ struct Route{
     int LocPrf;
     bool best_path;
     optional<ASPV> aspv;
+    optional<Isec> isec_v;
 };
 
 struct RouteDiff{

@@ -178,6 +178,8 @@ public:
         // Set ASPA to the routing table of all AS classes.
         for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
             it->second.routing_table.public_aspa_list = public_aspa_list;
+            it->second.routing_table.isec_adopted_as_list = isec_adopted_as_list;
+            it->second.routing_table.public_ProConID = public_ProConID;
         }
         int processed_msg_num = 0;
         while(!message_queue.empty()){
@@ -272,6 +274,7 @@ public:
 
                     RoutingTable routing_table;
                     optional<ASPV> aspv;
+                    optional<Isec> isec_v;
                     for(const auto& r : as_node["routing_table"]){
                         IPAddress route_address = r.first.as<IPAddress>();
                         for(const auto& route : r.second){
@@ -284,7 +287,7 @@ public:
                             }else{
                                 aspv = nullopt;
                             }
-                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv};
+                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv, nullopt};
                             routing_table.table[route_address].push_back(new_route);
 
                         }

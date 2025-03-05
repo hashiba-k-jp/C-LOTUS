@@ -16,12 +16,14 @@ public:
     map<IPAddress, vector<Route>> table;
     vector<Policy> policy;
     map<ASNumber, vector<ASNumber>> public_aspa_list;
+    vector<ASNumber> isec_adopted_as_list;
+    map<ASNumber, vector<ASNumber>> public_ProConID;
 
 public:
     RoutingTable() {}
     RoutingTable(vector<Policy> policy, const IPAddress network){
         this->policy = policy;
-        table[network] = {Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, nullopt}};
+        table[network] = {Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, nullopt, nullopt}};
     }
 
     map<IPAddress, Route> get_best_route_list(void){
@@ -106,8 +108,63 @@ public:
         throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
     }
 
+    optional<Isec> isec_v(const Route r, const Message update_msg){
+        // REFERENCE
+        // C. Morris, A. Herzberg, B. Wang, and S. Secondo,
+        // "BGP-iSec: Improved Security of Internet Routing Against Post-ROV Attacks",
+        // in USENIX Network and Distributed System Security (NDSS) Symposium, 2024.
+        // https://dx.doi.org/10.14722/ndss.2024.241035
+
+        // Origin = X0 -> X1 -> ... -> Xl -> Y = *update_msg.dst
+        // update_msg.path = {X0, X1, ..., Xl}, and Y is not included.
+
+        if(update_msg.type == MessageType::Init){
+            return nullopt;
+        }
+
+        // if the AS Y is not adopted AS, iSec should not evaluated.
+        if(!contains(isec_adopted_as_list, *update_msg.dst)){
+            return nullopt;
+        }
+
+        // If the origin AS does not adopted, iSec should not evaluated.
+        if(!contains(isec_adopted_as_list, get<ASNumber>((*update_msg.path).front()))){
+            return nullopt;
+        }
+
+        if(update_msg.come_from == ComeFrom::Provider){
+            return Isec::Valid;
+        }else{
+            vector<ASNumber> adopted_path_as = {};
+            for(const auto as_number : *update_msg.path){
+                // The type of as_number MUST be ASNumber
+                if(contains(isec_adopted_as_list, get<ASNumber>(as_number))){
+                    adopted_path_as.push_back(get<ASNumber>(as_number));
+                }
+            }
+            int i = 0;
+            while(i < static_cast<int>(size(adopted_path_as)) - 1){
+                if(!contains(public_ProConID[adopted_path_as[i]], adopted_path_as[i+1])){
+                    return Isec::Invalid;
+                }
+                ++i;
+            }
+            if(update_msg.come_from == ComeFrom::Peer){
+                return Isec::Valid;
+            }else if(update_msg.come_from == ComeFrom::Customer){
+                if(contains(public_ProConID[adopted_path_as.back()], *update_msg.dst)){
+                    return Isec::Valid;
+                }else{
+                    return Isec::Invalid;
+                }
+            }
+        }
+        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
+    }
+
     void new_route_security_validation(Route* route, Message update_msg){
         route->aspv = aspv(*route, update_msg.src);
+        route->isec_v = isec_v(*route, update_msg);
         // other security function should be added here.
     }
 
@@ -121,7 +178,7 @@ public:
             case ComeFrom::Peer:     LocPrf = 100; break;
             case ComeFrom::Provider: LocPrf = 50;  break;
         }
-        Route new_route = Route{path, come_from, LocPrf, false, nullopt};
+        Route new_route = Route{path, come_from, LocPrf, false, nullopt, nullopt};
 
         new_route_security_validation(&new_route, update_msg);
 
@@ -177,6 +234,11 @@ public:
                             break;
                         case Policy::Aspa:
                             if(new_route.aspv == ASPV::Invalid){
+                                return nullopt;
+                            }
+                            break;
+                        case Policy::Isec:
+                            if(new_route.isec_v == Isec::Invalid){
                                 return nullopt;
                             }
                             break;

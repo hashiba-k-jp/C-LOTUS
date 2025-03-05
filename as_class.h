@@ -61,6 +61,11 @@ public:
         }else if(r.aspv == nullopt){
             std::cout << "\033[1mASPV\033[0m: "      << "-------" << ", ";
         }
+        if(r.isec_v != nullopt){
+            std::cout << "\033[1mIsec\033[0m: "      << std::setw(7) << r.isec_v.value() << ", ";
+        }else if(r.isec_v == nullopt){
+            std::cout << "\033[1mIsec\033[0m: "      << "-------" << ", ";
+        }
 
         std::cout << "\033[1mpath\033[0m: "      << string_path(r.path) << "\n";
         return;
@@ -160,6 +165,7 @@ public:
             auto erase_p = find(policy.begin(), policy.end(), p);
             policy.erase(erase_p);
         }
+        routing_table.policy = policy;
     }
 };
 
