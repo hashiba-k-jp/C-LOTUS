@@ -511,49 +511,50 @@ public:
         return;
     }
 
-    void add_ProConID(ASNumber as_number){
-        if (as_class_list.class_list.find(as_number) == as_class_list.class_list.end()){
-            std::cout << "\033[33m[WARN] The AS " << as_number << " has NOT been registered.\033[00m" << std::endl;
-            return;
-        }
-        if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), as_number) == isec_adopted_as_list.end()){
-            std::cout << "\033[33m[WARN] Since the AS " << as_number << " has not adopted BGP-iSec, the ProConID does not exist.\033[00m" << std::endl;
-            return;
-        }
+    void add_ProConID_all(void){
+        for(const ASNumber as_number : isec_adopted_as_list){
+            vector<ASNumber> ProConID_list = {};
+            vector<ASNumber> provider_list = {as_number};
+            vector<ASNumber> checked_list = {};
 
-        vector<ASNumber> ProConID_list = {};
-        vector<ASNumber> provider_list = {as_number};
-
-        while(0 < provider_list.size()){
-            ASNumber customer = provider_list.front();
-            provider_list.erase(provider_list.begin());
-
-            vector<ASNumber> next_provider_list = {};
-
-            vector<Connection> c_list = get_connection_with(customer);
-            for(const Connection& connection : c_list){
-                if(as_a_is_what_on_c(customer, connection) == ComeFrom::Customer){
-                    next_provider_list.push_back(connection.src);
+            while(0 < provider_list.size()){
+                ASNumber customer = provider_list.front();
+                provider_list.erase(provider_list.begin());
+                if(contains(checked_list, customer)){
+                    continue;
                 }
-            }
+                checked_list.push_back(customer);
 
-            for(auto it = next_provider_list.begin(); it != next_provider_list.end();){
-                // std::cout << *it << '\n';
-                if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), *it) != isec_adopted_as_list.end()){
-                    ProConID_list.push_back(*it);
-                    it = next_provider_list.erase(it);
-                }else{
-                    ++it;
+                vector<ASNumber> next_provider_list = {};
+
+                vector<Connection> c_list = get_connection_with(customer);
+                for(const Connection& connection : c_list){
+                    if(as_a_is_what_on_c(customer, connection) == ComeFrom::Customer){
+                        next_provider_list.push_back(connection.src);
+                    }
                 }
-            }
 
-            // here, next_provider_list is the list of NON adopting provider as.
-            sort(next_provider_list.begin(), next_provider_list.end());
-            sort(provider_list.begin(), provider_list.end());
-            set_union(provider_list.begin(), provider_list.end(), next_provider_list.begin(), next_provider_list.end(), back_inserter(provider_list));
-            provider_list.erase(unique(provider_list.begin(), provider_list.end()), provider_list.end());
+                for(auto it = next_provider_list.begin(); it != next_provider_list.end();){
+                    if(contains(ProConID_list, *it) || contains(checked_list, *it)){
+                        it = next_provider_list.erase(it);
+                        continue;
+                    }
+                    if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), *it) != isec_adopted_as_list.end()){
+                        ProConID_list.push_back(*it);
+                        it = next_provider_list.erase(it);
+                    }else{
+                        ++it;
+                    }
+                }
+
+                // here, next_provider_list is the list of NON adopting provider as.
+                sort(next_provider_list.begin(), next_provider_list.end());
+                sort(provider_list.begin(), provider_list.end());
+                set_union(provider_list.begin(), provider_list.end(), next_provider_list.begin(), next_provider_list.end(), back_inserter(provider_list));
+                provider_list.erase(unique(provider_list.begin(), provider_list.end()), provider_list.end());
+            }
+            public_ProConID[as_number] = ProConID_list;
         }
-        public_ProConID[as_number] = ProConID_list;
         return;
     }
 
