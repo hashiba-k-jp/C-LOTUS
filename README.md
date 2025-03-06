@@ -1,7 +1,8 @@
 # C-LOTUS
 
 ![](https://img.shields.io/badge/-C++-00599C.svg?logo=cplusplus)
-![](https://img.shields.io/badge/-Work%20In%20Progress-orange)
+[![](https://img.shields.io/github/v/release/hashiba-k-jp/C-LOTUS?color=ff9300)](https://github.com/hashiba-k-jp/C-LOTUS/releases)
+
 
 <hr>
 
