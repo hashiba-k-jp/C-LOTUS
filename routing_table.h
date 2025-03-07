@@ -13,7 +13,7 @@
 
 class RoutingTable{
 public:
-    map<IPAddress, vector<Route>> table;
+    map<IPAddress, vector<Route*>> table;
     vector<Policy> policy;
     map<ASNumber, vector<ASNumber>> public_aspa_list;
     vector<ASNumber> isec_adopted_as_list;
@@ -23,17 +23,17 @@ public:
     RoutingTable() {}
     RoutingTable(vector<Policy> policy, const IPAddress network){
         this->policy = policy;
-        table[network] = {Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, nullopt, nullopt}};
+        table[network] = {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, nullopt, nullopt}};
     }
 
-    map<IPAddress, Route> get_best_route_list(void){
-        map<IPAddress, Route> best_route_list;
+    map<IPAddress, const Route*> get_best_route_list(void){
+        map<IPAddress, const Route*> best_route_list;
 
         for(auto it = table.begin(); it != table.end(); it++){
             IPAddress address = it->first;
-            vector<Route> route_list = it->second;
-            for(const Route& r : route_list){
-                if(r.best_path){
+            vector<Route*> route_list = it->second;
+            for(const Route* r : route_list){
+                if(r->best_path){
                     best_route_list[address] = r;
                 }
             }
@@ -178,26 +178,27 @@ public:
             case ComeFrom::Peer:     LocPrf = 100; break;
             case ComeFrom::Provider: LocPrf = 50;  break;
         }
-        Route new_route = Route{path, come_from, LocPrf, false, nullopt, nullopt};
+        Route* new_route = new Route{path, come_from, LocPrf, false, nullopt, nullopt};
 
-        new_route_security_validation(&new_route, update_msg);
+        new_route_security_validation(new_route, update_msg);
 
         if(table.count(network) > 0){ /* when the network already has several routes. */
+            table[network].push_back(new_route);
+
             Route* best = nullptr;
-            for(Route& r : table[network]){
-                if(r.best_path){
-                    best = &r;
+            for(Route* r : table[network]){
+                if(r->best_path){
+                    best = r;
                     break;
                 }
             }
             if(best == nullptr){
                 /* raise BestPathNotExist */
-                if(policy.front() == Policy::Aspa && new_route.aspv == ASPV::Invalid){
-                    new_route.best_path = false;
+                if(policy.front() == Policy::Aspa && new_route->aspv == ASPV::Invalid){
+                    new_route->best_path = false;
                     return nullopt;
                 }else{
-                    new_route.best_path = true;
-                    table[network].push_back(new_route);
+                    new_route->best_path = true;
                     return RouteDiff{come_from, path, network};
                 }
             }else{
@@ -205,40 +206,36 @@ public:
                 for(const Policy& p : policy){
                     switch(p) {
                         case Policy::LocPrf:
-                            if(new_route.LocPrf > best->LocPrf){
-                                new_route.best_path = true;
+                            if(new_route->LocPrf > best->LocPrf){
+                                new_route->best_path = true;
                                 best->best_path = false;
-                                table[network].push_back(new_route);
-                                return RouteDiff{new_route.come_from, new_route.path, network};
-                            }else if(new_route.LocPrf == best->LocPrf){
+                                return RouteDiff{new_route->come_from, new_route->path, network};
+                            }else if(new_route->LocPrf == best->LocPrf){
                                 continue;
-                            }else if(new_route.LocPrf < best->LocPrf){
-                                table[network].push_back(new_route);
+                            }else if(new_route->LocPrf < best->LocPrf){
                                 return nullopt;
                             }
                             break;
                         case Policy::PathLength:
-                            new_length = new_route.path.size();
+                            new_length = new_route->path.size();
                             best_length = best->path.size();
                             if(new_length < best_length){
-                                new_route.best_path = true;
+                                new_route->best_path = true;
                                 best->best_path = false;
-                                table[network].push_back(new_route);
-                                return RouteDiff{new_route.come_from, new_route.path, network};
+                                return RouteDiff{new_route->come_from, new_route->path, network};
                             }else if(new_length == best_length){
                                 continue;
                             }else if(new_length > best_length){
-                                table[network].push_back(new_route);
                                 return nullopt;
                             }
                             break;
                         case Policy::Aspa:
-                            if(new_route.aspv == ASPV::Invalid){
+                            if(new_route->aspv == ASPV::Invalid){
                                 return nullopt;
                             }
                             break;
                         case Policy::Isec:
-                            if(new_route.isec_v == Isec::Invalid){
+                            if(new_route->isec_v == Isec::Invalid){
                                 return nullopt;
                             }
                             break;
@@ -250,21 +247,21 @@ public:
             }
         }else{ /* when the network DOES NOT HAVE any routes. */
             // SECURITY CHECK;
-            if(contains(policy, Policy::Aspa) && new_route.aspv == ASPV::Invalid){
-                new_route.best_path = false;
+            if(contains(policy, Policy::Aspa) && new_route->aspv == ASPV::Invalid){
+                new_route->best_path = false;
                 table[network].push_back(new_route);
                 return nullopt;
             }
-            if(contains(policy, Policy::Isec) && new_route.isec_v == Isec::Invalid){
-                new_route.best_path = false;
+            if(contains(policy, Policy::Isec) && new_route->isec_v == Isec::Invalid){
+                new_route->best_path = false;
                 table[network].push_back(new_route);
                 return nullopt;
             }
-            new_route.best_path = true;
+            new_route->best_path = true;
             table[network].push_back(new_route);
             return RouteDiff{come_from, path, network};
         }
-        return nullopt; /* assert False*/
+        return nullopt;
     }
 };
 
@@ -283,7 +280,7 @@ namespace YAML{
             if(!node.IsScalar()){
                 return false;
             }
-            routing_table.table = node["routing_table"].as<map<IPAddress, vector<Route>>>();
+            routing_table.table = node["routing_table"].as<map<IPAddress, vector<Route*>>>();
             return true;
         }
     };

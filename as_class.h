@@ -48,26 +48,26 @@ public:
         }
     }
 
-    void show_route(const Route r){
-        if(r.best_path){
+    void show_route(const Route* r){
+        if(r->best_path){
             std::cout << "  \033[32m>\033[39m ";
         }else{
             std::cout << "    ";
         }
-        std::cout << "\033[1mLocPrf:\033[0m "    << std::setw(4) << r.LocPrf << ", ";
-        std::cout << "\033[1mcome_from\033[0m: " << std::setw(8) << r.come_from << ", ";
-        if(r.aspv != nullopt){
-            std::cout << "\033[1mASPV\033[0m: "      << std::setw(7) << r.aspv.value() << ", ";
-        }else if(r.aspv == nullopt){
+        std::cout << "\033[1mLocPrf:\033[0m "    << std::setw(4) << r->LocPrf << ", ";
+        std::cout << "\033[1mcome_from\033[0m: " << std::setw(8) << r->come_from << ", ";
+        if(r->aspv != nullopt){
+            std::cout << "\033[1mASPV\033[0m: "      << std::setw(7) << r->aspv.value() << ", ";
+        }else if(r->aspv == nullopt){
             std::cout << "\033[1mASPV\033[0m: "      << "-------" << ", ";
         }
-        if(r.isec_v != nullopt){
-            std::cout << "\033[1mIsec\033[0m: "      << std::setw(7) << r.isec_v.value() << ", ";
-        }else if(r.isec_v == nullopt){
+        if(r->isec_v != nullopt){
+            std::cout << "\033[1mIsec\033[0m: "      << std::setw(7) << r->isec_v.value() << ", ";
+        }else if(r->isec_v == nullopt){
             std::cout << "\033[1mIsec\033[0m: "      << "-------" << ", ";
         }
 
-        std::cout << "\033[1mpath\033[0m: "      << string_path(r.path) << "\n";
+        std::cout << "\033[1mpath\033[0m: "      << string_path(r->path) << "\n";
         return;
     }
 
@@ -84,7 +84,7 @@ public:
         std::cout << "routing table: (best path: \033[32m>\033[39m )" << "\n";
         for(auto it = routing_table.table.begin(); it != routing_table.table.end(); it++){
             std::cout << "  " << it->first << "\n";
-            for(const Route& r : it->second){
+            for(const Route* r : it->second){
                 show_route(r);
             }
         }
@@ -95,7 +95,7 @@ public:
 
     vector<Message> receive_init(Message init_msg){
         // "init_msg" has only the members "type" and "src".
-        map<IPAddress, Route> best_route_list = routing_table.get_best_route_list();
+        map<IPAddress, const Route*> best_route_list = routing_table.get_best_route_list();
         vector<Message> new_update_message_list;
         ASNumber update_src = as_number;
         ASNumber update_dst = init_msg.src;
@@ -103,12 +103,12 @@ public:
         if(*init_msg.come_from == ComeFrom::Customer){
             for(auto it = best_route_list.begin(); it != best_route_list.end(); it++){
                 IPAddress address = it->first;
-                Route r = it->second;
+                const Route* r = it->second;
                 Message new_update_message;
-                if(r.path == ITSELF_VEC){
+                if(r->path == ITSELF_VEC){
                     new_update_message = Message{MessageType::Update, update_src, update_dst, address, Path{{update_src}}, nullopt};
                 }else{
-                    Path p = r.path;
+                    Path p = r->path;
                     p.push_back(update_src);
                     new_update_message = Message{MessageType::Update, update_src, update_dst, address, p, nullopt};
                 }
@@ -117,13 +117,13 @@ public:
         }else if(*init_msg.come_from == ComeFrom::Peer || *init_msg.come_from == ComeFrom::Provider){
             for(auto it = best_route_list.begin(); it != best_route_list.end(); it++){
                 IPAddress address = it->first;
-                Route r = it->second;
+                const Route* r = it->second;
                 Message new_update_message;
-                if(r.come_from == ComeFrom::Customer){
-                    if(r.path == ITSELF_VEC){
+                if(r->come_from == ComeFrom::Customer){
+                    if(r->path == ITSELF_VEC){
                         new_update_message = Message{MessageType::Update, update_src, update_dst, address, Path{{update_src}}, nullopt};
                     }else{
-                        Path p = r.path;
+                        Path p = r->path;
                         p.push_back(update_src);
                         new_update_message = Message{MessageType::Update, update_src, update_dst, address, p, nullopt};
                     }

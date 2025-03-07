@@ -111,9 +111,9 @@ public:
         }
         IPAddress destination_network = destination_as_class->network_address;
         if(origin_as_class->routing_table.table.find(destination_network) != origin_as_class->routing_table.table.end()){
-            for(Route& r : origin_as_class->routing_table.table[destination_network]){
-                if(r.best_path){
-                    return r.path;
+            for(Route* r : origin_as_class->routing_table.table[destination_network]){
+                if(r->best_path){
+                    return r->path;
                 }
             }
         }
@@ -292,7 +292,7 @@ public:
                             }else{
                                 isec_v = nullopt;
                             }
-                            Route new_route = Route{path, come_from, LocPrf, best_path, aspv, isec_v};
+                            Route* new_route = new Route{path, come_from, LocPrf, best_path, aspv, isec_v};
                             routing_table.table[route_address].push_back(new_route);
 
                         }

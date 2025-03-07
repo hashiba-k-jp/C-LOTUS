@@ -392,27 +392,30 @@ namespace YAML{
     };
 
     template<>
-    struct convert<Route>{
-        static Node encode(const Route& r){
+    struct convert<Route*>{
+        static Node encode(const Route* r){
             Node node;
-            node["path"]      = string_path(r.path);
-            node["come_from"] = r.come_from;
-            node["LocPrf"]    = r.LocPrf;
-            node["best_path"] = r.best_path;
-            node["aspv"]      = r.aspv;
-            node["isec_v"]    = r.isec_v;
+            node["path"]      = string_path(r->path);
+            node["come_from"] = r->come_from;
+            node["LocPrf"]    = r->LocPrf;
+            node["best_path"] = r->best_path;
+            node["aspv"]      = r->aspv;
+            node["isec_v"]    = r->isec_v;
             return node;
         };
-        static bool decode(const Node& node, Route& r){
-            if(!node.IsScalar()){
+        static bool decode(const Node& node, Route*& r){
+            if(!node.IsMap()){
                 return false;
             }
-            r.path      = parse_path(node["path"].as<string>());
-            r.come_from = node["come_from"].as<ComeFrom>();
-            r.LocPrf    = node["LocPrf"].as<int>();
-            r.best_path = node["best_path"].as<bool>();
-            r.aspv      = node["aspv"].as<ASPV>();
-            r.isec_v    = node["isec_v"].as<Isec>();
+            if(r == nullptr){
+                r = new Route();
+            }
+            r->path      = parse_path(node["path"].as<string>());
+            r->come_from = node["come_from"].as<ComeFrom>();
+            r->LocPrf    = node["LocPrf"].as<int>();
+            r->best_path = node["best_path"].as<bool>();
+            r->aspv      = node["aspv"].as<ASPV>();
+            r->isec_v    = node["isec_v"].as<Isec>();
             return true;
         }
     };
