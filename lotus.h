@@ -29,8 +29,16 @@ public:
 
 public:
     void add_AS(ASNumber asn){
-        as_class_list.add_AS(asn);
-        return;
+        if(asn == 0){
+            std::cout << "\033[33m[WARN] Since AS " << asn << " is the special AS number, the AS was NOT added.\033[00m" << std::endl;
+            return;
+        }else if(as_class_list.class_list.count(asn)){
+            std::cout << "\033[33m[WARN] Since AS " << asn << " already exists, the AS was NOT added.\033[00m" << std::endl;
+            return;
+        }else{
+            as_class_list.add_AS(asn);
+            return;
+        }
     }
 
     ASClass* get_AS(ASNumber asn){
@@ -58,8 +66,12 @@ public:
             std::cout << "\033[33m[WARN] Since AS " << dst << " has NOT been registered, the connection CANNOT be added.\033[00m" << std::endl;
             return;
         }
-
-        connection_list.push_back(Connection{type, src, dst});
+        const Connection new_connection = Connection{type, src, dst};
+        if(contains(connection_list, new_connection)){
+            std::cout << "\033[33m[WARN] Attempted to add a duplicate connection {type = " << type << ", src = " << src << ", dst = " << dst << "}. Ignoring.\033[00m" << std::endl;
+            return;
+        }
+        connection_list.push_back(new_connection);
         return;
     }
 

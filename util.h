@@ -321,6 +321,10 @@ struct Message{
 struct Connection{
     ConnectionType type;
     ASNumber src, dst;
+
+    bool operator==(const Connection& other) const{
+        return type == other.type && src == other.src && dst == other.dst;
+    }
 };
 
 struct Route{
