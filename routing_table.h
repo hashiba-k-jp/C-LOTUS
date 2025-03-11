@@ -270,17 +270,24 @@ namespace YAML{
     struct convert<RoutingTable>{
         static Node encode(const RoutingTable& routing_table){
             Node node;
-            // node["policy"]    = routing_table.policy;
             for(const auto& it : routing_table.table){
                 node[it.first] = it.second;
             }
             return node;
         };
         static bool decode(const Node& node, RoutingTable& routing_table){
-            if(!node.IsScalar()){
+            if(!node.IsMap()){
                 return false;
             }
-            routing_table.table = node["routing_table"].as<map<IPAddress, vector<Route*>>>();
+            map<IPAddress, vector<Route*>> table;
+            for(const auto& r : node){
+                IPAddress route_address = r.first.as<IPAddress>();
+                for(const auto& route : r.second){
+                    Route* new_route = route.as<Route*>();
+                    table[route_address].push_back(new_route);
+                }
+            }
+            routing_table.table = table;
             return true;
         }
     };

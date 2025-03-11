@@ -411,15 +411,22 @@ namespace YAML{
             if(!node.IsMap()){
                 return false;
             }
-            if(r == nullptr){
-                r = new Route();
+            optional<ASPV> aspv = nullopt;
+            optional<Isec> isec_v;
+            if(node["aspv"] && !node["aspv"].IsNull()){
+                aspv = node["aspv"].as<ASPV>();
             }
-            r->path      = parse_path(node["path"].as<string>());
-            r->come_from = node["come_from"].as<ComeFrom>();
-            r->LocPrf    = node["LocPrf"].as<int>();
-            r->best_path = node["best_path"].as<bool>();
-            r->aspv      = node["aspv"].as<ASPV>();
-            r->isec_v    = node["isec_v"].as<Isec>();
+            if(node["isec_v"] && !node["isec_v"].IsNull()){
+                isec_v = node["isec_v"].as<Isec>();
+            }
+            r = new Route{
+                parse_path(node["path"].as<string>()),
+                node["come_from"].as<ComeFrom>(),
+                node["LocPrf"].as<int>(),
+                node["best_path"].as<bool>(),
+                aspv,
+                isec_v
+            };
             return true;
         }
     };
