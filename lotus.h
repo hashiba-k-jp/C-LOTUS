@@ -110,7 +110,7 @@ public:
     }
 
     optional<Path> get_best_path_to(ASNumber origin_as_number, ASNumber destination_as_number){
-        // return the best path from <origin_as_number> to <destination_as_number> if exists, otherwire nullopt.
+        // return the best path from <origin_as_number> to <destination_as_number> if exists, otherwise nullopt.
         ASClass* origin_as_class = get_AS(origin_as_number);
         ASClass* destination_as_class = get_AS(destination_as_number);
         if(origin_as_class == nullptr){
@@ -266,7 +266,15 @@ public:
         return;
     }
 
-    void file_import(string file_path){
+    void file_import(string file_path, bool overwrite=true){
+        // If overwrite is true,
+        //   - ALL AS, MESSAGES, CONNECTIONS MADE BEFORE IMPORTING WILL BE REMOVED.
+        // If false,
+        //   - ONLY AS (AS_NUMBER AND POLICY) (except for security objects) WILL BE ADDED.
+        //   - routing_table, network_address, messages, and connection will be discarded.
+        //   - ASPA for newly imported AS will be imported, but providers not newly imported will be discarded.
+        //   - Adoption of BGP-iSec will be imported only for newly imported AS.
+        //   - All ProConID will be discarded. (use add_ProConID_all())
         ifstream file(file_path);
         string line;
         if(file){
@@ -274,93 +282,109 @@ public:
                 std::cout << "\033[32m[INFO] Parsing \"" << file_path << "\".\033[00m" << std::endl;
 
                 YAML::Node imported = YAML::Load(file);
+                vector<ASNumber> imported_as;
 
                 /* AS LIST */
-                int index = imported["IP_gen_seed"].as<int>();
-                ASClassList new_as_class_list{index};
-                YAML::Node as_list = imported["AS_list"];
-                for(const auto& as_node : as_list){
-                    ASNumber as_number = as_node["AS"].as<ASNumber>();
-
-                    IPAddress address = as_node["network_address"].as<IPAddress>();
-
-                    RoutingTable routing_table;
-                    optional<ASPV> aspv;
-                    optional<Isec> isec_v;
-                    for(const auto& r : as_node["routing_table"]){
-                        IPAddress route_address = r.first.as<IPAddress>();
-                        for(const auto& route : r.second){
-                            Path path = parse_path(route["path"].as<string>());
-                            ComeFrom come_from = route["come_from"].as<ComeFrom>();
-                            int LocPrf = route["LocPrf"].as<int>();
-                            bool best_path = route["best_path"].as<bool>();
-                            if(route["aspv"]){
-                                aspv = route["aspv"].as<optional<ASPV>>();
-                            }else{
-                                aspv = nullopt;
-                            }
-                            if(route["isec_v"]){
-                                isec_v = route["isec_v"].as<optional<Isec>>();
-                            }else{
-                                isec_v = nullopt;
-                            }
-                            Route* new_route = new Route{path, come_from, LocPrf, best_path, aspv, isec_v};
-                            routing_table.table[route_address].push_back(new_route);
-
-                        }
+                if(overwrite){
+                    as_class_list = ASClassList(imported["IP_gen_seed"].as<int>());
+                    for(const auto& as_node : imported["AS_list"]){
+                        ASNumber as_number = as_node["AS"].as<ASNumber>();
+                        RoutingTable routing_table = as_node["routing_table"].as<RoutingTable>();
+                        vector<Policy> policy = as_node["policy"].as<vector<Policy>>();
+                        routing_table.policy = policy;
+                        as_class_list.class_list[as_number] = ASClass{
+                            as_number,
+                            as_node["network_address"].as<IPAddress>(),
+                            policy,
+                            routing_table
+                        };
                     }
-                    vector<Policy> policy = as_node["policy"].as<vector<Policy>>();
-                    routing_table.policy = policy;
-                    ASClass new_as = {as_number, address, policy, routing_table};
-                    new_as_class_list.class_list[as_number] = new_as;
+                }else{
+                    for(const auto& as_node : imported["AS_list"]){
+                        ASNumber as_number = as_node["AS"].as<ASNumber>();
+                        if(as_class_list.class_list.count(as_number)){
+                            continue;
+                        }
+                        add_AS(as_number);
+                        imported_as.push_back(as_number);
+                        ASClass* new_as_class = get_AS(as_number);
+                        new_as_class->policy = as_node["policy"].as<vector<Policy>>();
+                    }
                 }
-                as_class_list = new_as_class_list;
 
                 /* CONNECTION LIST */
-                connection_list = {};
-                for(const auto& c_node : imported["connection"]){
-                    ASNumber src = c_node["src"].as<ASNumber>();
-                    ASNumber dst = c_node["dst"].as<ASNumber>();
-                    ConnectionType type = c_node["type"].as<ConnectionType>();
-                    connection_list.push_back(Connection{type, src, dst});
+                if(overwrite){
+                    connection_list = {};
+                    for(const auto& c_node : imported["connection"]){
+                        ASNumber src = c_node["src"].as<ASNumber>();
+                        ASNumber dst = c_node["dst"].as<ASNumber>();
+                        ConnectionType type = c_node["type"].as<ConnectionType>();
+                        connection_list.push_back(Connection{type, src, dst});
+                    }
                 }
 
                 /* MESSAGES LIST */
-                message_queue = {};
-                for(const auto& m_node : imported["message"]){
-                    ASNumber src = m_node["src"].as<ASNumber>();
-                    MessageType msgtype = m_node["type"].as<MessageType>();
-                    if(msgtype == MessageType::Init){
-                        add_messages(msgtype, src);
-                    }else if(msgtype == MessageType::Update){
-                        ASNumber dst = m_node["dst"].as<ASNumber>();
-                        IPAddress address = m_node["network"].as<IPAddress>();
-                        Path path = parse_path(m_node["path"].as<string>());
-                        add_messages(msgtype, src, dst, address, path);
+                if(overwrite){
+                    message_queue = {};
+                    for(const auto& m_node : imported["message"]){
+                        ASNumber src = m_node["src"].as<ASNumber>();
+                        MessageType msgtype = m_node["type"].as<MessageType>();
+                        if(msgtype == MessageType::Init){
+                            add_messages(msgtype, src);
+                        }else if(msgtype == MessageType::Update){
+                            ASNumber dst = m_node["dst"].as<ASNumber>();
+                            IPAddress address = m_node["network"].as<IPAddress>();
+                            Path path = parse_path(m_node["path"].as<string>());
+                            add_messages(msgtype, src, dst, address, path);
+                        }
                     }
                 }
 
                 /* ASPA */
-                // map<ASNumber, vector<ASNumber>>
-                public_aspa_list = {};
-                for(const auto& aspa_node : imported["ASPA"]){
-                    ASNumber customer = aspa_node.first.as<ASNumber>();
-                    for(const auto& provider : aspa_node.second){
-                        public_aspa_list[customer].push_back(provider.as<ASNumber>());
+                if(overwrite){
+                    public_aspa_list = {};
+                    for(const auto& aspa_node : imported["ASPA"]){
+                        ASNumber customer = aspa_node.first.as<ASNumber>();
+                        for(const auto& provider : aspa_node.second){
+                            public_aspa_list[customer].push_back(provider.as<ASNumber>());
+                        }
+                    }
+                }else{
+                    for(const auto& aspa_node : imported["ASPA"]){
+                        ASNumber customer = aspa_node.first.as<ASNumber>();
+                        if(contains(imported_as, customer)){
+                            for(const auto& provider : aspa_node.second){
+                                ASNumber provider_as = provider.as<ASNumber>();
+                                if(contains(imported_as, provider_as)){
+                                    public_aspa_list[customer].push_back(provider_as);
+                                }
+                            }
+                        }
                     }
                 }
 
                 /* BGP-iSec */
-                isec_adopted_as_list = {};
-                for(const auto& as_number : imported["isec_adopted_as_list"]){
-                    isec_adopted_as_list.push_back(as_number.as<ASNumber>());
+                if(overwrite){
+                    isec_adopted_as_list = {};
+                    for(const auto& as_it : imported["isec_adopted_as_list"]){
+                        isec_adopted_as_list.push_back(as_it.as<ASNumber>());
+                    }
+                }else{
+                    for(const auto& as_it : imported["isec_adopted_as_list"]){
+                        ASNumber as_number = as_it.as<ASNumber>();
+                        if(contains(imported_as, as_number)){
+                            isec_adopted_as_list.push_back(as_number);
+                        }
+                    }
                 }
 
-                public_ProConID = {};
-                for(const auto& isec_node : imported["public_ProConID"]){
-                    ASNumber customer = isec_node.first.as<ASNumber>();
-                    for(const auto& provider : isec_node.second){
-                        public_ProConID[customer].push_back(provider.as<ASNumber>());
+                if(overwrite){
+                    public_ProConID = {};
+                    for(const auto& isec_node : imported["public_ProConID"]){
+                        ASNumber customer = isec_node.first.as<ASNumber>();
+                        for(const auto& provider : isec_node.second){
+                            public_ProConID[customer].push_back(provider.as<ASNumber>());
+                        }
                     }
                 }
 
