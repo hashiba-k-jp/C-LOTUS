@@ -323,7 +323,11 @@ struct Connection{
     ASNumber src, dst;
 
     bool operator==(const Connection& other) const{
-        return type == other.type && src == other.src && dst == other.dst;
+        if(type == ConnectionType::Peer && other.type == ConnectionType::Peer){
+            return ((src == other.src && dst == other.dst) || (src == other.dst && dst == other.src));
+        }else{
+            return type == other.type && src == other.src && dst == other.dst;
+        }
     }
 };
 
