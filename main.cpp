@@ -22,7 +22,7 @@ void test_normal(LOTUS LOTUS){
     LOTUS.show_AS_list();
 
     /* EXPORT DATA TO FILE */
-    LOTUS.file_export("./NORMAL_attack.yml");
+    LOTUS.file_export("./exp/NORMAL_attack.yml");
 
     return;
 }
@@ -57,7 +57,7 @@ void test_aspa(LOTUS LOTUS){
     LOTUS.show_AS_list();
 
     /* EXPORT DATA TO FILE */
-    LOTUS.file_export("./ASPA_attack.yml");
+    LOTUS.file_export("./exp/ASPA_attack.yml");
 
     return;
 }
@@ -90,7 +90,7 @@ void test_isec(LOTUS LOTUS){
     LOTUS.show_AS_list();
 
     /* EXPORT DATA TO FILE */
-    LOTUS.file_export("./ISEC_attack.yml");
+    LOTUS.file_export("./exp/ISEC_attack.yml");
 
     return;
 }
