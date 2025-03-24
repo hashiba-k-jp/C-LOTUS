@@ -1,15 +1,4 @@
-#include <iostream>
-#include <queue>
-#include <map>
-#include <vector>
-#include <string>
-#include <stdexcept>
-#include <omp.h>
-
-#include "util.h"
 #include "lotus.h"
-#include "routing_table.h"
-#include "as_class.h"
 
 /*
  * This main file is for test.

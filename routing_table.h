@@ -1,16 +1,6 @@
 #ifndef ROUTING_TABLE_H
 #define ROUTING_TABLE_H
 
-
-#include <iostream>
-#include <queue>
-#include <map>
-#include <vector>
-#include <string>
-#include <stdexcept>
-#include "util.h"
-
-
 class RoutingTable{
 public:
     map<IPAddress, vector<Route*>> table;
@@ -265,32 +255,30 @@ public:
     }
 };
 
-namespace YAML{
-    template<>
-    struct convert<RoutingTable>{
-        static Node encode(const RoutingTable& routing_table){
-            Node node;
-            for(const auto& it : routing_table.table){
-                node[it.first] = it.second;
-            }
-            return node;
-        };
-        static bool decode(const Node& node, RoutingTable& routing_table){
-            if(!node.IsMap()){
-                return false;
-            }
-            map<IPAddress, vector<Route*>> table;
-            for(const auto& r : node){
-                IPAddress route_address = r.first.as<IPAddress>();
-                for(const auto& route : r.second){
-                    Route* new_route = route.as<Route*>();
-                    table[route_address].push_back(new_route);
-                }
-            }
-            routing_table.table = table;
-            return true;
+template<>
+struct convert<RoutingTable>{
+    static Node encode(const RoutingTable& routing_table){
+        Node node;
+        for(const auto& it : routing_table.table){
+            node[it.first] = it.second;
         }
+        return node;
     };
-}
+    static bool decode(const Node& node, RoutingTable& routing_table){
+        if(!node.IsMap()){
+            return false;
+        }
+        map<IPAddress, vector<Route*>> table;
+        for(const auto& r : node){
+            IPAddress route_address = r.first.as<IPAddress>();
+            for(const auto& route : r.second){
+                Route* new_route = route.as<Route*>();
+                table[route_address].push_back(new_route);
+            }
+        }
+        routing_table.table = table;
+        return true;
+    }
+};
 
 #endif

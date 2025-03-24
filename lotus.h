@@ -5,15 +5,19 @@
 #include <string>
 #include <stdexcept>
 #include <fstream>
-#include <stdexcept>
 #include <filesystem>
+#include <sstream>
+#include <variant>
 
 #include <yaml-cpp/yaml.h>
 
+using namespace std;
+using namespace YAML;
+
 #include "util.h"
+#include "routing_table.h"
 #include "as_class.h"
 
-using namespace std;
 const vector<string> SPINNER = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"};
 
 class LOTUS{

@@ -1,19 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <iostream>
-#include <queue>
-#include <map>
-#include <vector>
-#include <string>
-#include <stdexcept>
-#include <sstream>
-#include <variant>
-
-#include <yaml-cpp/yaml.h>
-
-using namespace std;
-
 bool caseInsensitiveCompare(const std::string& str1, const std::string& str2) {
     return std::equal(str1.begin(), str1.end(), str2.begin(),
                       [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); });
@@ -70,178 +57,176 @@ OPERATOR_COUT(ASPV, ASPV_TYPE)
 OPERATOR_COUT(Isec, ISEC_TYPE)
 #undef X
 
-namespace YAML{
-    template<>
-    struct convert<MessageType>{
-        static Node encode(const MessageType& msg_type){
-            Node node;
-            switch(msg_type) {
-                #define X(name) case MessageType::name: node = #name; break;
-                MESSAGE_TYPE
-                #undef X
-            }
-            return node;
-        }
-        static bool decode(const Node& node, MessageType& value){
-            if(!node.IsScalar()){ return false; }
-            string s = node.as<string>();
-            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = MessageType::name; return true; }
+template<>
+struct convert<MessageType>{
+    static Node encode(const MessageType& msg_type){
+        Node node;
+        switch(msg_type) {
+            #define X(name) case MessageType::name: node = #name; break;
             MESSAGE_TYPE
             #undef X
-            return false;
         }
-    };
+        return node;
+    }
+    static bool decode(const Node& node, MessageType& value){
+        if(!node.IsScalar()){ return false; }
+        string s = node.as<string>();
+        #define X(name) if(caseInsensitiveCompare(s, #name)){ value = MessageType::name; return true; }
+        MESSAGE_TYPE
+        #undef X
+        return false;
+    }
+};
 
-    template<>
-    struct convert<ConnectionType>{
-        static Node encode(const ConnectionType& c_type){
-            Node node;
-            switch(c_type) {
-                #define X(name) case ConnectionType::name: node = #name; break;
-                CONNECTION_TYPE
-                #undef X
-            }
-            return node;
-        }
-        static bool decode(const Node& node, ConnectionType& value){
-            if(!node.IsScalar()){ return false; }
-            string s = node.as<string>();
-            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = ConnectionType::name; return true; }
+template<>
+struct convert<ConnectionType>{
+    static Node encode(const ConnectionType& c_type){
+        Node node;
+        switch(c_type) {
+            #define X(name) case ConnectionType::name: node = #name; break;
             CONNECTION_TYPE
             #undef X
-            return false;
         }
-    };
+        return node;
+    }
+    static bool decode(const Node& node, ConnectionType& value){
+        if(!node.IsScalar()){ return false; }
+        string s = node.as<string>();
+        #define X(name) if(caseInsensitiveCompare(s, #name)){ value = ConnectionType::name; return true; }
+        CONNECTION_TYPE
+        #undef X
+        return false;
+    }
+};
 
-    template<>
-    struct convert<ComeFrom>{
-        static Node encode(const ComeFrom& come_from){
-            Node node;
-            switch(come_from) {
-                #define X(name) case ComeFrom::name: node = #name; break;
-                COMEFROM
-                #undef X
-            }
-            return node;
-        }
-        static bool decode(const Node& node, ComeFrom& value){
-            if(!node.IsScalar()){ return false; }
-            string s = node.as<string>();
-            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = ComeFrom::name; return true; }
+template<>
+struct convert<ComeFrom>{
+    static Node encode(const ComeFrom& come_from){
+        Node node;
+        switch(come_from) {
+            #define X(name) case ComeFrom::name: node = #name; break;
             COMEFROM
             #undef X
-            return true;
         }
-    };
+        return node;
+    }
+    static bool decode(const Node& node, ComeFrom& value){
+        if(!node.IsScalar()){ return false; }
+        string s = node.as<string>();
+        #define X(name) if(caseInsensitiveCompare(s, #name)){ value = ComeFrom::name; return true; }
+        COMEFROM
+        #undef X
+        return true;
+    }
+};
 
-    template<>
-    struct convert<ASPV>{
-        static Node encode(const ASPV& aspv){
-            Node node;
-            switch(aspv) {
-                #define X(name) case ASPV::name: node = #name; break;
-                ASPV_TYPE
-                #undef X
-            }
-            return node;
-        }
-        static bool decode(const Node& node, ASPV& value){
-            if(!node.IsScalar()){ return false; }
-            string s = node.as<string>();
-            #define X(name) if(s == #name){ value = ASPV::name; return true; }
+template<>
+struct convert<ASPV>{
+    static Node encode(const ASPV& aspv){
+        Node node;
+        switch(aspv) {
+            #define X(name) case ASPV::name: node = #name; break;
             ASPV_TYPE
             #undef X
-            return true;
         }
-    };
+        return node;
+    }
+    static bool decode(const Node& node, ASPV& value){
+        if(!node.IsScalar()){ return false; }
+        string s = node.as<string>();
+        #define X(name) if(s == #name){ value = ASPV::name; return true; }
+        ASPV_TYPE
+        #undef X
+        return true;
+    }
+};
 
-    template<>
-    struct convert<Isec>{
-        static Node encode(const Isec& isec_v){
-            Node node;
-            switch(isec_v) {
-                #define X(name) case Isec::name: node = #name; break;
-                ISEC_TYPE
-                #undef X
-            }
-            return node;
-        }
-        static bool decode(const Node& node, Isec& value){
-            if(!node.IsScalar()){ return false; }
-            string s = node.as<string>();
-            #define X(name) if(s == #name){ value = Isec::name; return true; }
+template<>
+struct convert<Isec>{
+    static Node encode(const Isec& isec_v){
+        Node node;
+        switch(isec_v) {
+            #define X(name) case Isec::name: node = #name; break;
             ISEC_TYPE
             #undef X
-            return true;
         }
-    };
+        return node;
+    }
+    static bool decode(const Node& node, Isec& value){
+        if(!node.IsScalar()){ return false; }
+        string s = node.as<string>();
+        #define X(name) if(s == #name){ value = Isec::name; return true; }
+        ISEC_TYPE
+        #undef X
+        return true;
+    }
+};
 
-    template<>
-    struct convert<Policy>{
-        static Node encode(const Policy& policy){
-            Node node;
-            switch(policy) {
-                #define X(name) case Policy::name: node = #name; break;
-                POLICY
-                #undef X
-            }
-            return node;
-        }
-        static bool decode(const Node& node, Policy& value){
-            if(!node.IsScalar()){ return false; }
-            string s = node.as<string>();
-            #define X(name) if(caseInsensitiveCompare(s, #name)){ value = Policy::name; return true; }
+template<>
+struct convert<Policy>{
+    static Node encode(const Policy& policy){
+        Node node;
+        switch(policy) {
+            #define X(name) case Policy::name: node = #name; break;
             POLICY
             #undef X
-            return false;
         }
-    };
+        return node;
+    }
+    static bool decode(const Node& node, Policy& value){
+        if(!node.IsScalar()){ return false; }
+        string s = node.as<string>();
+        #define X(name) if(caseInsensitiveCompare(s, #name)){ value = Policy::name; return true; }
+        POLICY
+        #undef X
+        return false;
+    }
+};
 
-    template<>
-    struct convert<vector<Policy>> {
-        static Node encode(const vector<Policy>& policies) {
-            Node node;
-            for (const auto& p : policies) {
-                node.push_back(p);
-            }
-            return node;
+template<>
+struct convert<vector<Policy>> {
+    static Node encode(const vector<Policy>& policies) {
+        Node node;
+        for (const auto& p : policies) {
+            node.push_back(p);
         }
-        static bool decode(const Node& node, std::vector<Policy>& policy_list) {
-            if(!node.IsSequence()){ return false; }
-            for (const auto& n : node) {
-                policy_list.push_back(n.as<Policy>());
-            }
+        return node;
+    }
+    static bool decode(const Node& node, std::vector<Policy>& policy_list) {
+        if(!node.IsSequence()){ return false; }
+        for (const auto& n : node) {
+            policy_list.push_back(n.as<Policy>());
+        }
+        return true;
+    }
+};
+
+template<typename T>
+struct convert<optional<T>> {
+    static Node encode(const optional<T>& value) {
+        Node node;
+        if(!value){
+            node = Node();
+        } else {
+            node = *value;
+        }
+        return node;
+    }
+    static bool decode(const Node& node, optional<T>& value) {
+        if (!node || node.IsNull()) { // YAMLのnullをチェック
+            value = nullopt;
             return true;
         }
-    };
 
-    template<typename T>
-    struct convert<optional<T>> {
-        static Node encode(const optional<T>& value) {
-            Node node;
-            if(!value){
-                node = Node();
-            } else {
-                node = *value;
-            }
-            return node;
+        try {
+            value = node.as<T>(); // 型Tに変換
+            return true;
+        } catch (const YAML::BadConversion&) {
+            return false; // 変換失敗時はfalseを返す
         }
-        static bool decode(const Node& node, optional<T>& value) {
-            if (!node || node.IsNull()) { // YAMLのnullをチェック
-                value = nullopt;
-                return true;
-            }
+    }
+};
 
-            try {
-                value = node.as<T>(); // 型Tに変換
-                return true;
-            } catch (const YAML::BadConversion&) {
-                return false; // 変換失敗時はfalseを返す
-            }
-        }
-    };
-
-}
 
 
 /***
@@ -346,139 +331,138 @@ struct RouteDiff{
     IPAddress address;
 };
 
-namespace YAML{
+/* STRUCTS */
+template<>
+struct convert<Message>{
+    static Node encode(const Message& msg){
+        Node node;
+        node["type"] = msg.type;
+        node["src"]  = msg.src;
+        if(msg.type == MessageType::Update){
+            node["dst"]       = *msg.dst;
+            node["network"]   = *msg.address;
+            node["path"]      = string_path(*msg.path);
+            node["come_from"] = *msg.come_from;
+        }
+        return node;
+    }
+    static bool decode(const Node& node, Message& msg){
+        if(!node.IsScalar()){
+            return false;
+        }
+        msg.type = node["type"].as<MessageType>();
+        msg.src  = node["src"].as<ASNumber>();
+        if(node["type"].as<MessageType>() == MessageType::Update){
+            msg.dst       = node["dst"].as<ASNumber>();
+            msg.address   = node["network"].as<IPAddress>();
+            msg.path      = parse_path(node["path"].as<string>());
+            msg.come_from = node["come_from"].as<ComeFrom>();
+        }
+        return true;
+    }
+};
 
-    /* STRUCTS */
-    template<>
-    struct convert<Message>{
-        static Node encode(const Message& msg){
-            Node node;
-            node["type"] = msg.type;
-            node["src"]  = msg.src;
-            if(msg.type == MessageType::Update){
-                node["dst"]       = *msg.dst;
-                node["network"]   = *msg.address;
-                node["path"]      = string_path(*msg.path);
-                node["come_from"] = *msg.come_from;
-            }
-            return node;
+template<>
+struct convert<Connection>{
+    static Node encode(const Connection& c){
+        Node node;
+        node["dst"]  = c.dst;
+        node["src"]  = c.src;
+        node["type"] = c.type;
+        return node;
+    }
+    static bool decode(const Node& node, Connection& c){
+        if(!node.IsScalar()){
+            return false;
         }
-        static bool decode(const Node& node, Message& msg){
-            if(!node.IsScalar()){
-                return false;
-            }
-            msg.type = node["type"].as<MessageType>();
-            msg.src  = node["src"].as<ASNumber>();
-            if(node["type"].as<MessageType>() == MessageType::Update){
-                msg.dst       = node["dst"].as<ASNumber>();
-                msg.address   = node["network"].as<IPAddress>();
-                msg.path      = parse_path(node["path"].as<string>());
-                msg.come_from = node["come_from"].as<ComeFrom>();
-            }
-            return true;
-        }
+        c.src  = node["src"].as<ASNumber>();
+        c.dst  = node["dst"].as<ASNumber>();
+        c.type = node["type"].as<ConnectionType>();
+        return true;
+    }
+};
+
+template<>
+struct convert<Route*>{
+    static Node encode(const Route* r){
+        Node node;
+        node["path"]      = string_path(r->path);
+        node["come_from"] = r->come_from;
+        node["LocPrf"]    = r->LocPrf;
+        node["best_path"] = r->best_path;
+        node["aspv"]      = r->aspv;
+        node["isec_v"]    = r->isec_v;
+        return node;
     };
-
-    template<>
-    struct convert<Connection>{
-        static Node encode(const Connection& c){
-            Node node;
-            node["dst"]  = c.dst;
-            node["src"]  = c.src;
-            node["type"] = c.type;
-            return node;
+    static bool decode(const Node& node, Route*& r){
+        if(!node.IsMap()){
+            return false;
         }
-        static bool decode(const Node& node, Connection& c){
-            if(!node.IsScalar()){
-                return false;
-            }
-            c.src  = node["src"].as<ASNumber>();
-            c.dst  = node["dst"].as<ASNumber>();
-            c.type = node["type"].as<ConnectionType>();
-            return true;
+        optional<ASPV> aspv = nullopt;
+        optional<Isec> isec_v;
+        if(node["aspv"] && !node["aspv"].IsNull()){
+            aspv = node["aspv"].as<ASPV>();
         }
-    };
-
-    template<>
-    struct convert<Route*>{
-        static Node encode(const Route* r){
-            Node node;
-            node["path"]      = string_path(r->path);
-            node["come_from"] = r->come_from;
-            node["LocPrf"]    = r->LocPrf;
-            node["best_path"] = r->best_path;
-            node["aspv"]      = r->aspv;
-            node["isec_v"]    = r->isec_v;
-            return node;
+        if(node["isec_v"] && !node["isec_v"].IsNull()){
+            isec_v = node["isec_v"].as<Isec>();
+        }
+        r = new Route{
+            parse_path(node["path"].as<string>()),
+            node["come_from"].as<ComeFrom>(),
+            node["LocPrf"].as<int>(),
+            node["best_path"].as<bool>(),
+            aspv,
+            isec_v
         };
-        static bool decode(const Node& node, Route*& r){
-            if(!node.IsMap()){
-                return false;
-            }
-            optional<ASPV> aspv = nullopt;
-            optional<Isec> isec_v;
-            if(node["aspv"] && !node["aspv"].IsNull()){
-                aspv = node["aspv"].as<ASPV>();
-            }
-            if(node["isec_v"] && !node["isec_v"].IsNull()){
-                isec_v = node["isec_v"].as<Isec>();
-            }
-            r = new Route{
-                parse_path(node["path"].as<string>()),
-                node["come_from"].as<ComeFrom>(),
-                node["LocPrf"].as<int>(),
-                node["best_path"].as<bool>(),
-                aspv,
-                isec_v
-            };
-            return true;
-        }
-    };
+        return true;
+    }
+};
 
-    /* VECTOR, MAP,  */
+/* VECTOR, MAP,  */
 
-    template<typename Type>
-    struct convert<vector<Type>>{
-        static Node encode(const vector<Type>& vector_t){
-            Node node(NodeType::Sequence);
-            for(const auto& entry : vector_t){
-                node.push_back(entry);
-            }
-            return node;
+template<typename Type>
+struct convert<vector<Type>>{
+    static Node encode(const vector<Type>& vector_t){
+        Node node(NodeType::Sequence);
+        for(const auto& entry : vector_t){
+            node.push_back(entry);
         }
-        static bool decode(const Node& node, vector<Type>& vector_t){
-            if(!node.IsMap()){
-                return false;
-            }
-            for(const auto& entry : node){
-                vector_t.push_back(entry.as<Type>());
-            }
-            return true;
+        return node;
+    }
+    static bool decode(const Node& node, vector<Type>& vector_t){
+        if(!node.IsMap()){
+            return false;
         }
-    };
+        for(const auto& entry : node){
+            vector_t.push_back(entry.as<Type>());
+        }
+        return true;
+    }
+};
 
-    template<typename Type>
-    struct convert<queue<Type>>{
-        static Node encode(const queue<Type>& queue_t){
-            Node node(NodeType::Sequence);
-            queue<Type> tmp_queue = queue_t;
-            while(!tmp_queue.empty()){
-                node.push_back(tmp_queue.front());
-                tmp_queue.pop();
-            }
-            return node;
+template<typename Type>
+struct convert<queue<Type>>{
+    static Node encode(const queue<Type>& queue_t){
+        Node node(NodeType::Sequence);
+        queue<Type> tmp_queue = queue_t;
+        while(!tmp_queue.empty()){
+            node.push_back(tmp_queue.front());
+            tmp_queue.pop();
         }
-        static bool decode(const Node& node, queue<Type>& queue_t){
-            if(!node.IsSequence()){
-                return false;
-            }
-            for(const auto& entry : node){
-                queue_t.push(entry.as<Type>());
-            }
-            return true;
+        return node;
+    }
+    static bool decode(const Node& node, queue<Type>& queue_t){
+        if(!node.IsSequence()){
+            return false;
         }
-    };
+        for(const auto& entry : node){
+            queue_t.push(entry.as<Type>());
+        }
+        return true;
+    }
+};
 
+namespace YAML{
     template<typename Key, typename Value>
     struct convert<map<Key, Value>>{
         static Node encode(const map<Key, Value>& map){
