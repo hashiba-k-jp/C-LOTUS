@@ -5,7 +5,7 @@ class RoutingTable{
 public:
     map<IPAddress, vector<Route*>> table;
     vector<Policy> policy;
-    RPKI RPKI;
+    SecurityProtocol security_protocol;
 
 public:
     RoutingTable() {}
@@ -43,7 +43,7 @@ public:
 
         Route* new_route = new Route{path, come_from, LocPrf, false, empty_sec_valid()};
 
-        RPKI.new_route_security_validation(new_route, update_msg);
+        security_protocol.new_route_security_validation(new_route, update_msg);
 
         if(table.count(network) > 0){ /* when the network already has several routes. */
             table[network].push_back(new_route);
@@ -57,7 +57,7 @@ public:
             }
             if(best == nullptr){
                 /* if the routing table does not have any best path to the dst prefix. */
-                if(!RPKI.check_best_path(policy, new_route->security_valid)){
+                if(!security_protocol.check_best_path(policy, new_route->security_valid)){
                     new_route->best_path = false;
                     return nullopt;
                 }else{
@@ -66,7 +66,7 @@ public:
                 }
             }else{
                 int new_length, best_length;
-                if(!RPKI.check_best_path(policy, new_route->security_valid)){
+                if(!security_protocol.check_best_path(policy, new_route->security_valid)){
                     return nullopt;
                 }
                 for(const Policy& p : policy){
@@ -102,7 +102,7 @@ public:
             }
         }else{ /* when the network DOES NOT HAVE any routes. */
             // SECURITY CHECK;
-            if(!RPKI.check_best_path(policy, new_route->security_valid)){
+            if(!security_protocol.check_best_path(policy, new_route->security_valid)){
                 new_route->best_path = false;
                 table[network].push_back(new_route);
                 return nullopt;
