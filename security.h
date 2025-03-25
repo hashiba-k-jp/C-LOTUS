@@ -42,5 +42,11 @@ struct convert<Policy>{
 #include "policies/aspa.h"
 #include "policies/isec_procon_id.h"
 
+class RPKI{
+public:
+    map<ASNumber, vector<ASNumber>> public_aspa_list;
+    vector<ASNumber> isec_adopted_as_list;
+    map<ASNumber, vector<ASNumber>> public_ProConID;
+};
 
 #endif

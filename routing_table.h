@@ -5,9 +5,7 @@ class RoutingTable{
 public:
     map<IPAddress, vector<Route*>> table;
     vector<Policy> policy;
-    map<ASNumber, vector<ASNumber>> public_aspa_list;
-    vector<ASNumber> isec_adopted_as_list;
-    map<ASNumber, vector<ASNumber>> public_ProConID;
+    RPKI RPKI;
 
 public:
     RoutingTable() {}
@@ -33,9 +31,9 @@ public:
     }
 
     ASPV verify_pair(variant<ASNumber, Itself> customer, variant<ASNumber, Itself> provider){
-        auto it = public_aspa_list.find(get<ASNumber>(customer));
+        auto it = RPKI.public_aspa_list.find(get<ASNumber>(customer));
 
-        if(it == public_aspa_list.end()){
+        if(it == RPKI.public_aspa_list.end()){
             return ASPV::Unknown;
         }else{
             const vector<ASNumber>& provider_list = it->second;
@@ -113,12 +111,12 @@ public:
         }
 
         // if the AS Y is not adopted AS, iSec should not evaluated.
-        if(!contains(isec_adopted_as_list, *update_msg.dst)){
+        if(!contains(RPKI.isec_adopted_as_list, *update_msg.dst)){
             return nullopt;
         }
 
         // If the origin AS does not adopted, iSec should not evaluated.
-        if(!contains(isec_adopted_as_list, get<ASNumber>((*update_msg.path).front()))){
+        if(!contains(RPKI.isec_adopted_as_list, get<ASNumber>((*update_msg.path).front()))){
             return nullopt;
         }
 
@@ -128,13 +126,13 @@ public:
             vector<ASNumber> adopted_path_as = {};
             for(const auto as_number : *update_msg.path){
                 // The type of as_number MUST be ASNumber
-                if(contains(isec_adopted_as_list, get<ASNumber>(as_number))){
+                if(contains(RPKI.isec_adopted_as_list, get<ASNumber>(as_number))){
                     adopted_path_as.push_back(get<ASNumber>(as_number));
                 }
             }
             int i = 0;
             while(i < static_cast<int>(size(adopted_path_as)) - 1){
-                if(!contains(public_ProConID[adopted_path_as[i]], adopted_path_as[i+1])){
+                if(!contains(RPKI.public_ProConID[adopted_path_as[i]], adopted_path_as[i+1])){
                     return Isec::Invalid;
                 }
                 ++i;
@@ -142,7 +140,7 @@ public:
             if(update_msg.come_from == ComeFrom::Peer){
                 return Isec::Valid;
             }else if(update_msg.come_from == ComeFrom::Customer){
-                if(contains(public_ProConID[adopted_path_as.back()], *update_msg.dst)){
+                if(contains(RPKI.public_ProConID[adopted_path_as.back()], *update_msg.dst)){
                     return Isec::Valid;
                 }else{
                     return Isec::Invalid;

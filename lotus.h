@@ -27,11 +27,9 @@ class LOTUS{
 protected:
     queue<Message> message_queue;
     vector<Connection> connection_list;
-    map<ASNumber, vector<ASNumber>> public_aspa_list;
-    vector<ASNumber> isec_adopted_as_list;
-    map<ASNumber, vector<ASNumber>> public_ProConID;
 
 public:
+    RPKI RPKI;
     ASClassList as_class_list;
 
 public:
@@ -196,9 +194,7 @@ public:
     void run(bool print_progress=false){
         // Set ASPA to the routing table of all AS classes.
         for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
-            it->second.routing_table.public_aspa_list = public_aspa_list;
-            it->second.routing_table.isec_adopted_as_list = isec_adopted_as_list;
-            it->second.routing_table.public_ProConID = public_ProConID;
+            it->second.routing_table.RPKI = RPKI;
         }
         int processed_msg_num = 0;
         while(!message_queue.empty()){
@@ -349,11 +345,11 @@ public:
 
                 /* ASPA */
                 if(overwrite){
-                    public_aspa_list = {};
+                    RPKI.public_aspa_list = {};
                     for(const auto& aspa_node : imported["ASPA"]){
                         ASNumber customer = aspa_node.first.as<ASNumber>();
                         for(const auto& provider : aspa_node.second){
-                            public_aspa_list[customer].push_back(provider.as<ASNumber>());
+                            RPKI.public_aspa_list[customer].push_back(provider.as<ASNumber>());
                         }
                     }
                 }else{
@@ -363,7 +359,7 @@ public:
                             for(const auto& provider : aspa_node.second){
                                 ASNumber provider_as = provider.as<ASNumber>();
                                 if(contains(imported_as, provider_as)){
-                                    public_aspa_list[customer].push_back(provider_as);
+                                    RPKI.public_aspa_list[customer].push_back(provider_as);
                                 }
                             }
                         }
@@ -372,25 +368,25 @@ public:
 
                 /* BGP-iSec */
                 if(overwrite){
-                    isec_adopted_as_list = {};
-                    for(const auto& as_it : imported["isec_adopted_as_list"]){
-                        isec_adopted_as_list.push_back(as_it.as<ASNumber>());
+                    RPKI.isec_adopted_as_list = {};
+                    for(const auto& as_it : imported["RPKI.isec_adopted_as_list"]){
+                        RPKI.isec_adopted_as_list.push_back(as_it.as<ASNumber>());
                     }
                 }else{
-                    for(const auto& as_it : imported["isec_adopted_as_list"]){
+                    for(const auto& as_it : imported["RPKI.isec_adopted_as_list"]){
                         ASNumber as_number = as_it.as<ASNumber>();
                         if(contains(imported_as, as_number)){
-                            isec_adopted_as_list.push_back(as_number);
+                            RPKI.isec_adopted_as_list.push_back(as_number);
                         }
                     }
                 }
 
                 if(overwrite){
-                    public_ProConID = {};
-                    for(const auto& isec_node : imported["public_ProConID"]){
+                    RPKI.public_ProConID = {};
+                    for(const auto& isec_node : imported["RPKI.public_ProConID"]){
                         ASNumber customer = isec_node.first.as<ASNumber>();
                         for(const auto& provider : isec_node.second){
-                            public_ProConID[customer].push_back(provider.as<ASNumber>());
+                            RPKI.public_ProConID[customer].push_back(provider.as<ASNumber>());
                         }
                     }
                 }
@@ -433,9 +429,9 @@ public:
         export_data["message"] = message_queue;
 
         /* SECURITY OBJECTS */
-        export_data["ASPA"] = public_aspa_list;
-        export_data["isec_adopted_as_list"] = isec_adopted_as_list;
-        export_data["public_ProConID"] = public_ProConID;
+        export_data["ASPA"] = RPKI.public_aspa_list;
+        export_data["RPKI.isec_adopted_as_list"] = RPKI.isec_adopted_as_list;
+        export_data["RPKI.public_ProConID"] = RPKI.public_ProConID;
 
         std::ofstream fout(file_path_string);
         if (!fout) {
@@ -485,7 +481,7 @@ public:
 
     // SECURITY OBJECTS
     void add_ASPA(ASNumber customer, vector<ASNumber> provider_list){
-        public_aspa_list[customer] = provider_list;
+        RPKI.public_aspa_list[customer] = provider_list;
     }
 
     void auto_ASPA(ASNumber origin_customer, int hop_num){
@@ -508,9 +504,9 @@ public:
                 }
                 next_customer_as_list.insert(next_customer_as_list.end(), provider_list.begin(), provider_list.end());
                 if(provider_list.size() == 0){
-                    public_aspa_list[customer] = {0};
+                    RPKI.public_aspa_list[customer] = {0};
                 }else{
-                    public_aspa_list[customer] = provider_list;
+                    RPKI.public_aspa_list[customer] = provider_list;
                 }
             }
             hop_num -= 1;
@@ -527,7 +523,7 @@ public:
     void show_ASPA_list(void){
         std::cout << "--------------------" << "\n";
         std::cout << "ASPA" << '\n';
-        for(auto it = public_aspa_list.begin(); it != public_aspa_list.end(); it++){
+        for(auto it = RPKI.public_aspa_list.begin(); it != RPKI.public_aspa_list.end(); it++){
             std::cout << "  - \033[1mcustomer\033[0m : " << it->first;
             std::cout << ", \033[1mASPA\033[0m : " << it->second << "\n";
         }
@@ -536,16 +532,16 @@ public:
 
     void switch_adoption_iSec(ASNumber as_number, bool onoff, int priority){
         if(onoff){
-            if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), as_number) == isec_adopted_as_list.end()){
-                isec_adopted_as_list.push_back(as_number);
+            if(find(RPKI.isec_adopted_as_list.begin(), RPKI.isec_adopted_as_list.end(), as_number) == RPKI.isec_adopted_as_list.end()){
+                RPKI.isec_adopted_as_list.push_back(as_number);
                 get_AS(as_number)->change_policy(onoff, Policy::Isec, priority);
             }else{
                 std::cout << "\033[33m[WARN] The AS " << as_number << " has already published its adoption of BGP-iSec.\033[00m" << std::endl;
             }
         }else{
-            auto it = remove(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), as_number);
-            if (it != isec_adopted_as_list.end()) {
-                isec_adopted_as_list.erase(it, isec_adopted_as_list.end());
+            auto it = remove(RPKI.isec_adopted_as_list.begin(), RPKI.isec_adopted_as_list.end(), as_number);
+            if (it != RPKI.isec_adopted_as_list.end()) {
+                RPKI.isec_adopted_as_list.erase(it, RPKI.isec_adopted_as_list.end());
                 get_AS(as_number)->change_policy(onoff, Policy::Isec, priority);
             } else {
                 std::cout << "\033[33m[WARN] The AS " << as_number << " has not adopted BGP-iSec.\033[00m" << std::endl;
@@ -555,7 +551,7 @@ public:
     }
 
     void add_ProConID_all(void){
-        for(const ASNumber as_number : isec_adopted_as_list){
+        for(const ASNumber as_number : RPKI.isec_adopted_as_list){
             vector<ASNumber> ProConID_list = {};
             vector<ASNumber> provider_list = {as_number};
             vector<ASNumber> checked_list = {};
@@ -582,7 +578,7 @@ public:
                         it = next_provider_list.erase(it);
                         continue;
                     }
-                    if(find(isec_adopted_as_list.begin(), isec_adopted_as_list.end(), *it) != isec_adopted_as_list.end()){
+                    if(find(RPKI.isec_adopted_as_list.begin(), RPKI.isec_adopted_as_list.end(), *it) != RPKI.isec_adopted_as_list.end()){
                         ProConID_list.push_back(*it);
                         it = next_provider_list.erase(it);
                     }else{
@@ -596,7 +592,7 @@ public:
                 set_union(provider_list.begin(), provider_list.end(), next_provider_list.begin(), next_provider_list.end(), back_inserter(provider_list));
                 provider_list.erase(unique(provider_list.begin(), provider_list.end()), provider_list.end());
             }
-            public_ProConID[as_number] = ProConID_list;
+            RPKI.public_ProConID[as_number] = ProConID_list;
         }
         return;
     }
@@ -604,8 +600,8 @@ public:
     void show_isec_adopting(void){
         std::cout << "--------------------" << "\n";
         std::cout << "BGP-iSec Adopting AS" << "\n  ";
-        sort(isec_adopted_as_list.begin(), isec_adopted_as_list.end());
-        for(const ASNumber as_number : isec_adopted_as_list){
+        sort(RPKI.isec_adopted_as_list.begin(), RPKI.isec_adopted_as_list.end());
+        for(const ASNumber as_number : RPKI.isec_adopted_as_list){
             std::cout << as_number << ", ";
         }
         std::cout << "\b\b\x1b[K\n--------------------\n";
@@ -615,7 +611,7 @@ public:
     void show_ProConID_list(void){
         std::cout << "--------------------" << "\n";
         std::cout << "ProConID" << '\n';
-        for(auto it = public_ProConID.begin(); it != public_ProConID.end(); it++){
+        for(auto it = RPKI.public_ProConID.begin(); it != RPKI.public_ProConID.end(); it++){
             std::cout << "  - \033[1mcustomer\033[0m : " << it->first;
             std::cout << ", \033[1mProConID\033[0m : " << it->second << "\n";
         }
