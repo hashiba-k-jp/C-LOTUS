@@ -18,6 +18,7 @@ using namespace YAML;
 #include "data_struct.h"
 #include "routing_table.h"
 #include "as_class.h"
+#include "util_convert.h"
 
 const vector<string> SPINNER = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"};
 
