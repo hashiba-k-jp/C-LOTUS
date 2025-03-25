@@ -85,13 +85,14 @@ struct Connection{
     }
 };
 
+struct SecurityValid;
+
 struct Route{
     Path path;
     ComeFrom come_from;
     int LocPrf;
     bool best_path;
-    optional<ASPV> aspv;
-    optional<Isec> isec_v;
+    SecurityValid* security_valid;
 };
 
 struct RouteDiff{

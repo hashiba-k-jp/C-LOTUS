@@ -11,7 +11,7 @@ public:
     RoutingTable() {}
     RoutingTable(vector<Policy> policy, const IPAddress network){
         this->policy = policy;
-        table[network] = {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, nullopt, nullopt}};
+        table[network] = {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, empty_sec_valid()}};
     }
 
     map<IPAddress, const Route*> get_best_route_list(void){
@@ -30,132 +30,6 @@ public:
         return best_route_list;
     }
 
-    ASPV verify_pair(variant<ASNumber, Itself> customer, variant<ASNumber, Itself> provider){
-        auto it = RPKI.public_aspa_list.find(get<ASNumber>(customer));
-
-        if(it == RPKI.public_aspa_list.end()){
-            return ASPV::Unknown;
-        }else{
-            const vector<ASNumber>& provider_list = it->second;
-            if(find(provider_list.begin(), provider_list.end(), get<ASNumber>(provider)) != provider_list.end()){
-                return ASPV::Valid;
-            }else{
-                return ASPV::Invalid;
-            }
-        }
-        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-    }
-
-    ASPV aspv(const Route r, ASNumber neighbor_as){
-        // The last node of the path of the route from another AS MUST NOT be Itself::I,
-        // thus comparing only to ASNumber is enough.
-
-        // Note: (I-D [https://datatracker.ietf.org/doc/draft-ietf-sidrops-aspa-verification/])
-        // If there are no hops or just one hop between the apexes of the up-ramp and the down-ramp, then the AS_PATH is valid (valley free).
-
-        if(const ASNumber* p = get_if<ASNumber>(&r.path.back()); p && *p != neighbor_as){
-            return ASPV::Invalid;
-        }
-        ASPV semi_state = ASPV::Valid;
-        ASPV pair_check;
-        switch(r.come_from){
-            case ComeFrom::Customer:
-            case ComeFrom::Peer:
-                for(size_t i = 0; i < r.path.size() - 1; ++i){
-                    pair_check = verify_pair(r.path[i], r.path[i+1]);
-                    if(pair_check == ASPV::Invalid){
-                        return ASPV::Invalid;
-                    }else if(pair_check == ASPV::Unknown){
-                        semi_state = ASPV::Unknown;
-                    }
-                }
-                return semi_state;
-            case ComeFrom::Provider:
-                bool upflow_fragment = true;
-                for(size_t i = 0; (upflow_fragment&&i<r.path.size()-1)||(!upflow_fragment&&i<r.path.size()); ++i){
-                    if(upflow_fragment){
-                        // r.path.size() <= i+1, IndexError
-                        pair_check = verify_pair(r.path[i], r.path[i+1]);
-                        if(pair_check == ASPV::Invalid){
-                            upflow_fragment = false;
-                        }else if(pair_check == ASPV::Unknown){
-                            semi_state = ASPV::Unknown;
-                        }
-                    }else if(upflow_fragment == false){
-                        // if r.path.size() <= i, IndexError.
-                        pair_check = verify_pair(r.path[i], r.path[i-1]);
-                        if(pair_check == ASPV::Invalid){
-                            return ASPV::Invalid;
-                        }else if(pair_check == ASPV::Unknown){
-                            semi_state = ASPV::Unknown;
-                        }
-                    }
-                }
-                return semi_state;
-        }
-        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-    }
-
-    optional<Isec> isec_v(const Route r, const Message update_msg){
-        // REFERENCE
-        // C. Morris, A. Herzberg, B. Wang, and S. Secondo,
-        // "BGP-iSec: Improved Security of Internet Routing Against Post-ROV Attacks",
-        // in USENIX Network and Distributed System Security (NDSS) Symposium, 2024.
-        // https://dx.doi.org/10.14722/ndss.2024.241035
-
-        // Origin = X0 -> X1 -> ... -> Xl -> Y = *update_msg.dst
-        // update_msg.path = {X0, X1, ..., Xl}, and Y is not included.
-
-        if(update_msg.type == MessageType::Init){
-            return nullopt;
-        }
-
-        // if the AS Y is not adopted AS, iSec should not evaluated.
-        if(!contains(RPKI.isec_adopted_as_list, *update_msg.dst)){
-            return nullopt;
-        }
-
-        // If the origin AS does not adopted, iSec should not evaluated.
-        if(!contains(RPKI.isec_adopted_as_list, get<ASNumber>((*update_msg.path).front()))){
-            return nullopt;
-        }
-
-        if(update_msg.come_from == ComeFrom::Provider){
-            return Isec::Valid;
-        }else{
-            vector<ASNumber> adopted_path_as = {};
-            for(const auto as_number : *update_msg.path){
-                // The type of as_number MUST be ASNumber
-                if(contains(RPKI.isec_adopted_as_list, get<ASNumber>(as_number))){
-                    adopted_path_as.push_back(get<ASNumber>(as_number));
-                }
-            }
-            int i = 0;
-            while(i < static_cast<int>(size(adopted_path_as)) - 1){
-                if(!contains(RPKI.public_ProConID[adopted_path_as[i]], adopted_path_as[i+1])){
-                    return Isec::Invalid;
-                }
-                ++i;
-            }
-            if(update_msg.come_from == ComeFrom::Peer){
-                return Isec::Valid;
-            }else if(update_msg.come_from == ComeFrom::Customer){
-                if(contains(RPKI.public_ProConID[adopted_path_as.back()], *update_msg.dst)){
-                    return Isec::Valid;
-                }else{
-                    return Isec::Invalid;
-                }
-            }
-        }
-        throw logic_error("\n\033[31m[ERROR] Unreachable code reached in function: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-    }
-
-    void new_route_security_validation(Route* route, Message update_msg){
-        route->aspv = aspv(*route, update_msg.src);
-        route->isec_v = isec_v(*route, update_msg);
-        // other security function should be added here.
-    }
-
     optional<RouteDiff> update(Message update_msg){
         IPAddress network  = *update_msg.address;
         Path path          = *update_msg.path;
@@ -166,9 +40,10 @@ public:
             case ComeFrom::Peer:     LocPrf = 100; break;
             case ComeFrom::Provider: LocPrf = 50;  break;
         }
-        Route* new_route = new Route{path, come_from, LocPrf, false, nullopt, nullopt};
 
-        new_route_security_validation(new_route, update_msg);
+        Route* new_route = new Route{path, come_from, LocPrf, false, empty_sec_valid()};
+
+        RPKI.new_route_security_validation(new_route, update_msg);
 
         if(table.count(network) > 0){ /* when the network already has several routes. */
             table[network].push_back(new_route);
@@ -181,8 +56,8 @@ public:
                 }
             }
             if(best == nullptr){
-                /* raise BestPathNotExist */
-                if(policy.front() == Policy::Aspa && new_route->aspv == ASPV::Invalid){
+                /* if the routing table does not have any best path to the dst prefix. */
+                if(!RPKI.check_best_path(policy, new_route->security_valid)){
                     new_route->best_path = false;
                     return nullopt;
                 }else{
@@ -191,6 +66,9 @@ public:
                 }
             }else{
                 int new_length, best_length;
+                if(!RPKI.check_best_path(policy, new_route->security_valid)){
+                    return nullopt;
+                }
                 for(const Policy& p : policy){
                     switch(p) {
                         case Policy::LocPrf:
@@ -217,37 +95,22 @@ public:
                                 return nullopt;
                             }
                             break;
-                        case Policy::Aspa:
-                            if(new_route->aspv == ASPV::Invalid){
-                                return nullopt;
-                            }
-                            break;
-                        case Policy::Isec:
-                            if(new_route->isec_v == Isec::Invalid){
-                                return nullopt;
-                            }
-                            break;
                         default:
-                            throw logic_error("\n\033[31m[ERROR] Invalid Policy type: " + string(__func__) + " at " + string(__FILE__) + ":" + to_string(__LINE__) + "\033[0m");
-                            break;
+                            continue;
                     }
                 }
             }
         }else{ /* when the network DOES NOT HAVE any routes. */
             // SECURITY CHECK;
-            if(contains(policy, Policy::Aspa) && new_route->aspv == ASPV::Invalid){
+            if(!RPKI.check_best_path(policy, new_route->security_valid)){
                 new_route->best_path = false;
                 table[network].push_back(new_route);
                 return nullopt;
-            }
-            if(contains(policy, Policy::Isec) && new_route->isec_v == Isec::Invalid){
-                new_route->best_path = false;
+            }else{
+                new_route->best_path = true;
                 table[network].push_back(new_route);
-                return nullopt;
+                return RouteDiff{come_from, path, network};
             }
-            new_route->best_path = true;
-            table[network].push_back(new_route);
-            return RouteDiff{come_from, path, network};
         }
         return nullopt;
     }

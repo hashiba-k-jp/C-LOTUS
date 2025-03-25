@@ -145,8 +145,7 @@ namespace YAML{
             node["come_from"] = r->come_from;
             node["LocPrf"]    = r->LocPrf;
             node["best_path"] = r->best_path;
-            node["aspv"]      = r->aspv;
-            node["isec_v"]    = r->isec_v;
+            node["sec_valid"] = r->security_valid;
             return node;
         };
         static bool decode(const Node& node, Route*& r){
@@ -166,8 +165,7 @@ namespace YAML{
                 node["come_from"].as<ComeFrom>(),
                 node["LocPrf"].as<int>(),
                 node["best_path"].as<bool>(),
-                aspv,
-                isec_v
+                node["sec_valid"].as<SecurityValid*>()
             };
             return true;
         }
@@ -302,6 +300,26 @@ namespace YAML{
                 }
             }
             routing_table.table = table;
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<SecurityValid*>{
+        static Node encode(const SecurityValid* security_valid){
+            Node node;
+            node["aspv"] = security_valid->aspv;
+            node["isec_v"] = security_valid->isec_v;
+            return node;
+        }
+        static bool decode(const Node& node, SecurityValid*& security_valid){
+            if(!node.IsSequence()){
+                return false;
+            }
+            security_valid = new SecurityValid{
+                node["aspv"].as<ASPV>(),
+                node["aspv"].as<Isec>(),
+            };
             return true;
         }
     };

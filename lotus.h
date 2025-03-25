@@ -15,8 +15,8 @@ using namespace std;
 using namespace YAML;
 
 #include "util.h"
-#include "security.h"
 #include "data_struct.h"
+#include "security.h"
 #include "routing_table.h"
 #include "as_class.h"
 #include "util_convert.h"

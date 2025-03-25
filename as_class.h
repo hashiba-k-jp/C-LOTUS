@@ -44,14 +44,14 @@ public:
         }
         std::cout << "\033[1mLocPrf:\033[0m "    << std::setw(4) << r->LocPrf << ", ";
         std::cout << "\033[1mcome_from\033[0m: " << std::setw(8) << r->come_from << ", ";
-        if(r->aspv != nullopt){
-            std::cout << "\033[1mASPV\033[0m: "      << std::setw(7) << r->aspv.value() << ", ";
-        }else if(r->aspv == nullopt){
+        if(r->security_valid->aspv != nullopt){
+            std::cout << "\033[1mASPV\033[0m: "      << std::setw(7) << r->security_valid->aspv.value() << ", ";
+        }else if(r->security_valid->aspv == nullopt){
             std::cout << "\033[1mASPV\033[0m: "      << "-------" << ", ";
         }
-        if(r->isec_v != nullopt){
-            std::cout << "\033[1mIsec\033[0m: "      << std::setw(7) << r->isec_v.value() << ", ";
-        }else if(r->isec_v == nullopt){
+        if(r->security_valid->isec_v != nullopt){
+            std::cout << "\033[1mIsec\033[0m: "      << std::setw(7) << r->security_valid->isec_v.value() << ", ";
+        }else if(r->security_valid->isec_v == nullopt){
             std::cout << "\033[1mIsec\033[0m: "      << "-------" << ", ";
         }
 
