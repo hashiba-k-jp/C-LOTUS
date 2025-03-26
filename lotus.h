@@ -343,57 +343,16 @@ public:
                     }
                 }
 
-                /* ASPA */
-                if(overwrite){
-                    security_protocol.RPKI.public_aspa_list = {};
-                    for(const auto& aspa_node : imported["ASPA"]){
-                        ASNumber customer = aspa_node.first.as<ASNumber>();
-                        for(const auto& provider : aspa_node.second){
-                            security_protocol.RPKI.public_aspa_list[customer].push_back(provider.as<ASNumber>());
-                        }
-                    }
-                }else{
-                    for(const auto& aspa_node : imported["ASPA"]){
-                        ASNumber customer = aspa_node.first.as<ASNumber>();
-                        if(contains(imported_as, customer)){
-                            for(const auto& provider : aspa_node.second){
-                                ASNumber provider_as = provider.as<ASNumber>();
-                                if(contains(imported_as, provider_as)){
-                                    security_protocol.RPKI.public_aspa_list[customer].push_back(provider_as);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                /* BGP-iSec */
-                if(overwrite){
-                    security_protocol.RPKI.isec_adopted_as_list = {};
-                    for(const auto& as_it : imported["security_protocol.RPKI.isec_adopted_as_list"]){
-                        security_protocol.RPKI.isec_adopted_as_list.push_back(as_it.as<ASNumber>());
-                    }
-                }else{
-                    for(const auto& as_it : imported["security_protocol.RPKI.isec_adopted_as_list"]){
-                        ASNumber as_number = as_it.as<ASNumber>();
-                        if(contains(imported_as, as_number)){
-                            security_protocol.RPKI.isec_adopted_as_list.push_back(as_number);
-                        }
-                    }
-                }
-
-                if(overwrite){
-                    security_protocol.RPKI.public_ProConID = {};
-                    for(const auto& isec_node : imported["security_protocol.RPKI.public_ProConID"]){
-                        ASNumber customer = isec_node.first.as<ASNumber>();
-                        for(const auto& provider : isec_node.second){
-                            security_protocol.RPKI.public_ProConID[customer].push_back(provider.as<ASNumber>());
-                        }
-                    }
-                }
+                /* SECURITY RPKI */
+                security_protocol.RPKI = imported["RPKI"].as<RPKI>();
 
             }catch(YAML::ParserException &e){
                 std::cout << "\033[33m[WARN] The file \"" << file_path << "\" is INVALID as a yaml file.\033[00m" << std::endl;
                 std::cerr << "\033[33m       " << e.what() << "\033[00m\n";
+            }catch(YAML::BadConversion &e){
+                std::cout << "\033[33m[WARN] The file \"" << file_path << "\" is INVALID as a yaml file.\033[00m" << std::endl;
+                std::cerr << "\033[33m       " << e.what() << "\033[00m\n";
+                exit(0);
             }
         }else{
             std::cout << "\033[33m[WARN] The file \"" << file_path << "\" does NOT exist.\033[00m" << std::endl;
@@ -429,9 +388,7 @@ public:
         export_data["message"] = message_queue;
 
         /* SECURITY OBJECTS */
-        export_data["ASPA"] = security_protocol.RPKI.public_aspa_list;
-        export_data["RPKI.isec_adopted_as_list"] = security_protocol.RPKI.isec_adopted_as_list;
-        export_data["RPKI.public_ProConID"] = security_protocol.RPKI.public_ProConID;
+        export_data["RPKI"] = security_protocol.RPKI;
 
         std::ofstream fout(file_path_string);
         if (!fout) {

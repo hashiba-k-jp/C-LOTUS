@@ -152,14 +152,6 @@ namespace YAML{
             if(!node.IsMap()){
                 return false;
             }
-            optional<ASPV> aspv = nullopt;
-            optional<Isec> isec_v;
-            if(node["aspv"] && !node["aspv"].IsNull()){
-                aspv = node["aspv"].as<ASPV>();
-            }
-            if(node["isec_v"] && !node["isec_v"].IsNull()){
-                isec_v = node["isec_v"].as<Isec>();
-            }
             r = new Route{
                 parse_path(node["path"].as<string>()),
                 node["come_from"].as<ComeFrom>(),
@@ -181,7 +173,7 @@ namespace YAML{
             return node;
         }
         static bool decode(const Node& node, vector<Type>& vector_t){
-            if(!node.IsMap()){
+            if(!node.IsSequence()){
                 return false;
             }
             for(const auto& entry : node){
@@ -313,13 +305,33 @@ namespace YAML{
             return node;
         }
         static bool decode(const Node& node, SecurityValid*& security_valid){
-            if(!node.IsSequence()){
+            if(!node.IsMap()){
                 return false;
             }
             security_valid = new SecurityValid{
-                node["aspv"].as<ASPV>(),
-                node["aspv"].as<Isec>(),
+                node["aspv"].as<optional<ASPV>>(),
+                node["isec_v"].as<optional<Isec>>(),
             };
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<RPKI>{
+        static Node encode(const RPKI RPKI){
+            Node node;
+            node["public_aspa_list"]        = RPKI.public_aspa_list;
+            node["isec_adopted_as_list"]    = RPKI.isec_adopted_as_list;
+            node["public_ProConID"]         = RPKI.public_ProConID;
+            return node;
+        }
+        static bool decode(const Node& node, RPKI& RPKI){
+            if(!node.IsMap()){
+                return false;
+            }
+            RPKI.public_aspa_list           = node["public_aspa_list"].as<map<ASNumber, vector<ASNumber>>>();
+            RPKI.isec_adopted_as_list       = node["isec_adopted_as_list"].as<vector<ASNumber>>();
+            RPKI.public_ProConID            = node["public_ProConID"].as<map<ASNumber, vector<ASNumber>>>();
             return true;
         }
     };
