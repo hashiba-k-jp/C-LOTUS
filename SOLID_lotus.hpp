@@ -19,7 +19,7 @@ using namespace YAML;
 #include "util.h"
 #include "data_struct.h"
 #include "routing_table.h"
-#include "as_class.h"
+#include "as_class.hpp"
 #include "util_convert.h"
 
 
