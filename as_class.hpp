@@ -18,7 +18,7 @@ using namespace YAML;
 
 #include "util.h"
 #include "data_struct.h"
-#include "routing_table.h"
+#include "routing_table.hpp"
 
 class ASClass{
 public:
