@@ -19,6 +19,7 @@ using IPAddress = string;
 #define CONNECTION_TYPE X(Peer) X(Down)
 #define COMEFROM X(Customer) X(Peer) X(Provider)
 #define POLICY X(LocPrf) X(PathLength) X(Aspa) X(Isec)
+// #define VALIDATION X(Valid) X(Invalid)
 #define ASPV_TYPE X(Valid) X(Invalid) X(Unknown)
 #define ISEC_TYPE X(Valid) X(Invalid) X(Debug)
 
@@ -55,6 +56,27 @@ OPERATOR_COUT(Policy, POLICY)
 OPERATOR_COUT(ASPV, ASPV_TYPE)
 #define X(name) case Isec::name: os << #name; break;
 OPERATOR_COUT(Isec, ISEC_TYPE)
+#undef X
+
+#define TO_STRING(ClassName, EnumValues)\
+std::string to_string(ClassName value) {\
+    switch (value) {\
+        EnumValues\
+    }\
+}
+
+#define X(name) case MessageType::name: return #name;
+TO_STRING(MessageType, MESSAGE_TYPE)
+#define X(name) case ConnectionType::name: return #name;
+TO_STRING(ConnectionType, CONNECTION_TYPE)
+#define X(name) case ComeFrom::name: return #name;
+TO_STRING(ComeFrom, COMEFROM)
+#define X(name) case Policy::name: return #name;
+TO_STRING(Policy, POLICY)
+#define X(name) case ASPV::name: return #name;
+TO_STRING(ASPV, ASPV_TYPE)
+#define X(name) case Isec::name: return #name;
+TO_STRING(Isec, ISEC_TYPE)
 #undef X
 
 #endif
