@@ -7,7 +7,7 @@ CXXFLAGS = -Wall -Wextra -std=c++17 $(INCLUDES) -Wno-unused-parameter -Xpreproce
 # LDFLAGS = -L$(shell brew --prefix yaml-cpp)/lib -lyaml-cpp -L$(shell brew --prefix libomp)/lib -lomp
 # INCLUDES = -I$(shell brew --prefix yaml-cpp)/include -I$(shell brew --prefix libomp)/include
 SRCS = main.cpp
-HEADERS = lotus.h util.h as_class.h routing_table.h data_struct.h
+HEADERS = lotus.h util.h as_class.h routing_table.h data_struct.h util_convert.h
 OBJS = $(SRCS:.cpp=.o)
 TARGET = main
 
