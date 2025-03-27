@@ -16,7 +16,7 @@
 using namespace std;
 using namespace YAML;
 
-#include "util.h"
+#include "util.hpp"
 
 enum class Itself{ I };
 using Path = vector<variant<ASNumber, Itself>>;

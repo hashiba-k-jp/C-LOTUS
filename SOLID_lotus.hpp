@@ -16,7 +16,7 @@
 using namespace std;
 using namespace YAML;
 
-#include "util.h"
+#include "util.hpp"
 #include "data_struct.hpp"
 #include "routing_table.hpp"
 #include "as_class.hpp"
