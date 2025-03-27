@@ -37,24 +37,4 @@ public:
     void change_policy(bool onoff, Policy p, int priority);
 };
 
-class IPAddressGenerator{
-public:
-    int index = 0;
-public:
-    IPAddressGenerator(int index=0);
-    IPAddress get_unique_address(void);
-};
-
-class ASClassList{
-public:
-    IPAddressGenerator ip_gen = IPAddressGenerator{};
-    map<ASNumber, ASClass> class_list = {};
-public:
-    ASClassList(int index=0);
-    ASClass* get_AS(ASNumber asn);
-    void add_AS(ASNumber asn);
-    void show_AS(ASNumber asn);
-    void show_AS_list(void);
-};
-
 #endif

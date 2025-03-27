@@ -343,28 +343,6 @@ namespace YAML{
     };
 
     template<>
-    struct convert<ASClassList> {
-        static Node encode(const ASClassList& as_class_list) {
-            Node node;
-            for(auto it = as_class_list.class_list.begin(); it != as_class_list.class_list.end(); it++){
-                node["AS_list"].push_back(it->second);
-            }
-            node["IP_gen_seed"] = as_class_list.ip_gen.index;
-            return node;
-        }
-        static bool decode(const Node& node, ASClassList& as_class_list) {
-            if(!node.IsSequence()){
-                return false;
-            }
-            for(const auto& as_class : node["AS_list"]){
-                as_class_list.class_list[as_class["AS"].as<ASNumber>()] = as_class.as<ASClass>();
-            }
-            as_class_list.ip_gen = IPAddressGenerator{node["IP_gen_seed"].as<int>()};
-            return true;
-        }
-    };
-
-    template<>
     struct convert<RoutingTable>{
         static Node encode(const RoutingTable& routing_table){
             Node node;
