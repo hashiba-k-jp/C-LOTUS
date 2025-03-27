@@ -22,22 +22,6 @@ using namespace YAML;
 #include "as_class.hpp"
 #include "util_convert.hpp"
 
-
-class ILogger{
-public:
-    virtual void info(const string& msg) = 0;
-    virtual void warn(const string& msg) = 0;
-    virtual void error(const string& msg) = 0;
-    virtual ~ILogger() = default;
-};
-class Logger : public ILogger{
-public:
-    void info(const string& msg) override;
-    void warn(const string& msg) override;
-    void error(const string& msg) override;
-};
-
-
 class IASManager{
 public:
     virtual void add_AS(ASNumber asn) = 0;
