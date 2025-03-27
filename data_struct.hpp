@@ -1,6 +1,23 @@
 #ifndef DATA_STRUCT_H
 #define DATA_STRUCT_H
 
+#include <iostream>
+#include <queue>
+#include <map>
+#include <vector>
+#include <string>
+#include <stdexcept>
+#include <fstream>
+#include <filesystem>
+#include <sstream>
+#include <variant>
+
+#include <yaml-cpp/yaml.h>
+using namespace std;
+using namespace YAML;
+
+#include "util.h"
+
 enum class Itself{ I };
 using Path = vector<variant<ASNumber, Itself>>;
 inline std::ostream& operator<<(std::ostream& os, Itself itself) {
