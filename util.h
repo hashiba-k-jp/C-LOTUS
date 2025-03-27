@@ -1,7 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-bool caseInsensitiveCompare(const std::string& str1, const std::string& str2) {
+inline bool caseInsensitiveCompare(const std::string& str1, const std::string& str2) {
     return std::equal(str1.begin(), str1.end(), str2.begin(),
                       [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); });
 }
@@ -37,7 +37,7 @@ CREATE_ENUM_CLASS(Isec, ISEC_TYPE)
 #undef X
 
 #define OPERATOR_COUT(ClassName, EnumValues)\
-std::ostream& operator<<(std::ostream& os, ClassName value) {\
+inline std::ostream& operator<<(std::ostream& os, ClassName value) {\
     switch (value) {\
         EnumValues\
     }\
@@ -59,7 +59,7 @@ OPERATOR_COUT(Isec, ISEC_TYPE)
 #undef X
 
 #define TO_STRING(ClassName, EnumValues)\
-std::string to_string(ClassName value) {\
+inline std::string to_string(ClassName value) {\
     switch (value) {\
         EnumValues\
     }\

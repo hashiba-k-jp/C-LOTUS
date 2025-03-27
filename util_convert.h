@@ -1,3 +1,6 @@
+#ifndef UTIL_CONVERT_H
+#define UTIL_CONVERT_H
+
 namespace YAML{
     template<>
     struct convert<MessageType>{
@@ -408,3 +411,5 @@ std::ostream& operator<<(std::ostream& os, const optional<T>& val) {
     }
     return os;
 }
+
+#endif

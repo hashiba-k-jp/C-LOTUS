@@ -3,12 +3,12 @@
 
 enum class Itself{ I };
 using Path = vector<variant<ASNumber, Itself>>;
-std::ostream& operator<<(std::ostream& os, Itself itself) {
+inline std::ostream& operator<<(std::ostream& os, Itself itself) {
     os << "I";
     return os;
 }
 
-ostream& operator<<(ostream& os, const variant<ASNumber, Itself>& v) {
+inline ostream& operator<<(ostream& os, const variant<ASNumber, Itself>& v) {
     visit([&os](auto&& arg){
         using T = decay_t<decltype(arg)>;
         if constexpr (is_same_v<T, ASNumber>) { os << arg; }
@@ -17,8 +17,8 @@ ostream& operator<<(ostream& os, const variant<ASNumber, Itself>& v) {
     return os;
 }
 
-vector<variant<ASNumber, Itself>> ITSELF_VEC = {Itself::I};
-bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, Itself>& rhs) {
+inline vector<variant<ASNumber, Itself>> ITSELF_VEC = {Itself::I};
+inline bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, Itself>& rhs) {
     return visit([](const auto& lhs_val, const auto& rhs_val) -> bool {
         using T1 = decay_t<decltype(lhs_val)>;
         using T2 = decay_t<decltype(rhs_val)>;
@@ -30,7 +30,7 @@ bool operator==(const variant<ASNumber, Itself>& lhs, const variant<ASNumber, It
     }, lhs, rhs);
 }
 
-Path parse_path(string path_string){
+inline Path parse_path(string path_string){
     Path path;
     vector<string> as_string_list;
     std::stringstream ss(path_string);
@@ -50,7 +50,7 @@ Path parse_path(string path_string){
     return path;
 }
 
-string string_path(Path path){
+inline string string_path(Path path){
     ostringstream oss;
     for (auto it = path.rbegin(); it != path.rend(); ++it) {
         oss << *it << "-";

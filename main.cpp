@@ -1,5 +1,4 @@
-#include "lotus.h"
-#include "SOLID_lotus.h"
+#include "SOLID_lotus.hpp"
 
 /*
  * This main file is for test.
