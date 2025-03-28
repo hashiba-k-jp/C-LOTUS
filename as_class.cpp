@@ -3,7 +3,6 @@
 ASClass::ASClass(ASNumber as_number, IPAddress address, vector<Policy> policy, optional<RoutingTable> given_routing_table){
     this->as_number = as_number;
     this->network_address = address;
-    this->policy = policy;
     if(given_routing_table == nullopt){
         this->routing_table = RoutingTable{policy, address};
     }else{
@@ -15,11 +14,6 @@ void ASClass::show_AS(void){
     std::cout << "====================" << "\n";
     std::cout << "\033[1mAS NUMBER\033[0m : \033[36m" << as_number << "\033[39m\n";
     std::cout << "\033[1mnetwork\033[0m   : \033[36m" << network_address << "\033[39m\n";
-    std::cout << "\033[1mpolicy\033[0m    : \033[36m";
-    for(const Policy& p : policy){
-        std::cout << p << " ";
-    }
-    std::cout << "\033[39m\n";
     routing_table.show_table();
     std::cout << "====================" << "\n";
     return;
@@ -81,12 +75,7 @@ optional<RouteDiff> ASClass::update(Message update_msg){
     }
 }
 
-void ASClass::change_policy(bool onoff, Policy p, int priority){
-    if(onoff /* == true */){
-        policy.insert(policy.begin() + (priority - 1), p);
-    }else{
-        auto erase_p = find(policy.begin(), policy.end(), p);
-        policy.erase(erase_p);
-    }
-    routing_table.policy = policy;
+void ASClass::add_policy(Policy new_policy, int priority){
+    routing_table.add_policy(new_policy, priority);
+    return;
 }

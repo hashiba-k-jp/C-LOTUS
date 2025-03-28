@@ -22,6 +22,8 @@ using namespace YAML;
 #include "as_class.hpp"
 #include "util_convert.hpp"
 #include "manager.hpp"
+#include "security.hpp"
+#include "security_manager.hpp"
 
 class NEW_LOTUS{
     IASManager* as_manager;

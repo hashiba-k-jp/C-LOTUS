@@ -48,6 +48,7 @@ public:
 class IRoutingTable{
 public:
     virtual void show_table(void) const = 0;
+    virtual void add_policy(Policy new_policy, int priority) = 0;
     virtual ~IRoutingTable() = default;
 };
 
@@ -63,6 +64,7 @@ public:
     RoutingTable() {}
     RoutingTable(vector<Policy> policy, const IPAddress network);
     void show_table(void) const override;
+    void add_policy(Policy new_policy, int priority) override;
     map<IPAddress, const Route*> get_best_route_list(void);
     ASPV verify_pair(variant<ASNumber, Itself> customer, variant<ASNumber, Itself> provider);
     ASPV aspv(const Route r, ASNumber neighbor_as);

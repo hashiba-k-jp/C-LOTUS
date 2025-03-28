@@ -10,6 +10,7 @@ int main() {
     ConnectionManager connManager(&logger, &asManager);
     MessageProcessor msgProcessor(&asManager, &logger);
     FileManager fileManager(&asManager, &connManager, &msgProcessor, &logger);
+    SecurityManager sec_manager(&asManager, &logger);
     NEW_LOTUS NEW_LOTUS(&asManager, &connManager, &msgProcessor, &logger);
 
     asManager.add_AS(1);

@@ -24,6 +24,11 @@ void Route::show_route(void) const{
 }
 
 void RoutingTable::show_table(void) const{
+    std::cout << "\033[1mpolicy\033[0m    : \033[36m";
+    for(const Policy& p : policy){
+        std::cout << p << " ";
+    }
+    std::cout << "\033[39m\n";
     cout << "routing table: (best path: \033[32m>\033[39m )\n";
     for(auto it = table.begin(); it != table.end(); it++){
         std::cout << "  " << it->first << "\n";
@@ -36,6 +41,11 @@ void RoutingTable::show_table(void) const{
 RoutingTable::RoutingTable(vector<Policy> policy, const IPAddress network){
     this->policy = policy;
     table[network] = {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, RouteSecurity{nullopt, nullopt}}};
+}
+
+void RoutingTable::add_policy(Policy new_policy, int priority){
+    policy.insert(policy.begin() + (priority - 1), new_policy);
+    return;
 }
 
 map<IPAddress, const Route*> RoutingTable::get_best_route_list(void){

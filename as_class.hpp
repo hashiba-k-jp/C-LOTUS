@@ -33,7 +33,7 @@ public:
     void show_AS(void);
     vector<Message> receive_init(Message init_msg);
     optional<RouteDiff> update(Message update_msg);
-    void change_policy(bool onoff, Policy p, int priority);
+    void add_policy(Policy new_policy, int priority);
 };
 
 #endif
