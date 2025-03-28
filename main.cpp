@@ -20,6 +20,11 @@ int main() {
     asManager.add_AS(100);
     asManager.add_AS(200);
 
+    sec_manager.adopt_security_policy(1, Policy::Aspa, 1);
+    sec_manager.aspa->set_spas(100, {10});
+    sec_manager.aspa->show_ASPV_list();
+    sec_manager.aspa->show_SPAS_list();
+
     connManager.add_connection(ConnectionType::Down, 1, 10);
     connManager.add_connection(ConnectionType::Peer, 10, 11);
     connManager.add_connection(ConnectionType::Peer, 11, 12);

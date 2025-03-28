@@ -26,7 +26,8 @@ class I_ASPA : public ISecurityPolicy{
 public:
     virtual void publish_aspa(ASNumber asn) = 0;
     virtual void set_spas(ASNumber asn, vector<ASNumber> provider_list) = 0;
-    virtual void show_ASPA_list() = 0;
+    virtual void show_ASPV_list(void) = 0;
+    virtual void show_SPAS_list(void) = 0;
     virtual ASPV aspv(const Route r, ASNumber neighbor_as) = 0;
     virtual ~I_ASPA() = default;
 };
@@ -41,7 +42,8 @@ public:
         : as_manager(as_manager), logger(logger){}
     void publish_aspa(ASNumber asn) override;
     void set_spas(ASNumber asn, vector<ASNumber> provider_list) override;
-    void show_ASPA_list(void) override;
+    void show_ASPV_list(void) override;
+    void show_SPAS_list(void) override;
     ASPV aspv(const Route r, ASNumber neighbor_as) override;
     void before_run(void) override;
     ASPV verify_pair(variant<ASNumber, Itself> customer, variant<ASNumber, Itself> provider);

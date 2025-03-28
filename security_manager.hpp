@@ -29,6 +29,7 @@ using namespace YAML;
 class SecurityManager{
     IASManager* as_manager;
     ILogger* logger;
+public:
     I_ASPA* aspa;
     I_Isec_ProconID* isec;
 public:

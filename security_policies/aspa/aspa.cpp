@@ -2,33 +2,42 @@
 
 void ASPA::publish_aspa(ASNumber asn){
     if(!as_manager->has_AS(asn)){
-        logger->warn("The AS number " + to_string(asn) + " has NOT been registered. (Aborted)");
+        logger->error("The AS number " + to_string(asn) + " has NOT been registered. (Aborted)");
+        return;
     }
     if(contains(adoption_list, asn)){
-        logger->warn("The AS number " + to_string(asn) + " has already adopted ASPA. (Overwrite)");
+        logger->warn("The AS number " + to_string(asn) + " has already adopted ASPA. (Aborted)");
+        return;
     }
     adoption_list.push_back(asn);
-    set_spas(asn, {});
     return;
 }
 
 void ASPA::set_spas(ASNumber asn, vector<ASNumber> provider_list){
     if(!as_manager->has_AS(asn)){
-        logger->warn("The AS number " + to_string(asn) + " has NOT been registered. (Aborted)");
+        logger->error("The AS number " + to_string(asn) + " has NOT been registered. (Aborted)");
+        return;
     }
     if(!contains(adoption_list, asn)){
-        logger->warn("The AS number " + to_string(asn) + " does not adpot ASPA. (Aborted)");
+        logger->warn("The AS number " + to_string(asn) + " does not adpot ASPA. (Continue)");
     }
     spas_list[asn] = provider_list;
     return;
 }
 
-void ASPA::show_ASPA_list(){
+void ASPA::show_ASPV_list(void){
+    cout << "--------------------" << "\n";
+    cout << "ASPV enabled AS" << '\n';
+    cout << adoption_list << "\n";
+    cout << "--------------------" << "\n";
+}
+
+void ASPA::show_SPAS_list(void){
     cout << "--------------------" << "\n";
     cout << "ASPA" << '\n';
-    for(ASNumber asn : adoption_list){
-        cout << "  - \033[1mcustomer\033[0m : " << asn;
-        cout << ", \033[1mSPAS\033[0m : " << spas_list[asn] << "\n";
+    for(const auto& it : spas_list){
+        cout << "  - \033[1mcustomer\033[0m : " << it.first;
+        cout << ", \033[1mSPAS\033[0m : " << it.second << "\n";
     }
     cout << "--------------------" << "\n";
 }
