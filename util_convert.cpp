@@ -159,8 +159,8 @@ namespace YAML{
         node["come_from"] = r->come_from;
         node["LocPrf"]    = r->LocPrf;
         node["best_path"] = r->best_path;
-        node["aspv"]      = r->aspv;
-        node["isec_v"]    = r->isec_v;
+        node["aspv"]      = r->route_sec.aspv;
+        node["isec_v"]    = r->route_sec.isec_v;
         return node;
     };
     bool convert<Route*>::decode(const Node& node, Route*& r){
@@ -180,8 +180,10 @@ namespace YAML{
             node["come_from"].as<ComeFrom>(),
             node["LocPrf"].as<int>(),
             node["best_path"].as<bool>(),
-            aspv,
-            isec_v
+            RouteSecurity{
+                aspv,
+                isec_v
+            }
         };
         return true;
     }

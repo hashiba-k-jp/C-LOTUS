@@ -11,29 +11,6 @@ ASClass::ASClass(ASNumber as_number, IPAddress address, vector<Policy> policy, o
     }
 }
 
-void ASClass::show_route(const Route* r){
-    if(r->best_path){
-        std::cout << "  \033[32m>\033[39m ";
-    }else{
-        std::cout << "    ";
-    }
-    std::cout << "\033[1mLocPrf:\033[0m "    << std::setw(4) << r->LocPrf << ", ";
-    std::cout << "\033[1mcome_from\033[0m: " << std::setw(8) << r->come_from << ", ";
-    if(r->aspv != nullopt){
-        std::cout << "\033[1mASPV\033[0m: "      << std::setw(7) << r->aspv.value() << ", ";
-    }else if(r->aspv == nullopt){
-        std::cout << "\033[1mASPV\033[0m: "      << "-------" << ", ";
-    }
-    if(r->isec_v != nullopt){
-        std::cout << "\033[1mIsec\033[0m: "      << std::setw(7) << r->isec_v.value() << ", ";
-    }else if(r->isec_v == nullopt){
-        std::cout << "\033[1mIsec\033[0m: "      << "-------" << ", ";
-    }
-
-    std::cout << "\033[1mpath\033[0m: "      << string_path(r->path) << "\n";
-    return;
-}
-
 void ASClass::show_AS(void){
     std::cout << "====================" << "\n";
     std::cout << "\033[1mAS NUMBER\033[0m : \033[36m" << as_number << "\033[39m\n";
@@ -43,16 +20,8 @@ void ASClass::show_AS(void){
         std::cout << p << " ";
     }
     std::cout << "\033[39m\n";
-
-    std::cout << "routing table: (best path: \033[32m>\033[39m )" << "\n";
-    for(auto it = routing_table.table.begin(); it != routing_table.table.end(); it++){
-        std::cout << "  " << it->first << "\n";
-        for(const Route* r : it->second){
-            show_route(r);
-        }
-    }
+    routing_table.show_table();
     std::cout << "====================" << "\n";
-
     return;
 }
 

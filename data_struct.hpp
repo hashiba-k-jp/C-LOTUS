@@ -102,15 +102,6 @@ struct Connection{
     }
 };
 
-struct Route{
-    Path path;
-    ComeFrom come_from;
-    int LocPrf;
-    bool best_path;
-    optional<ASPV> aspv;
-    optional<Isec> isec_v;
-};
-
 struct RouteDiff{
     ComeFrom come_from;
     Path path;

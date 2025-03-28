@@ -30,7 +30,6 @@ public:
 public:
     ASClass() {}
     ASClass(ASNumber as_number, IPAddress address, vector<Policy> policy={Policy::LocPrf, Policy::PathLength}, optional<RoutingTable> given_routing_table=nullopt);
-    void show_route(const Route* r);
     void show_AS(void);
     vector<Message> receive_init(Message init_msg);
     optional<RouteDiff> update(Message update_msg);

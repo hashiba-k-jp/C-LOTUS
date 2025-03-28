@@ -1,8 +1,41 @@
 #include "routing_table.hpp"
 
+void Route::show_route(void) const{
+    if(best_path){
+        std::cout << "  \033[32m>\033[39m ";
+    }else{
+        std::cout << "    ";
+    }
+    std::cout << "\033[1mLocPrf:\033[0m "    << std::setw(4) << LocPrf << ", ";
+    std::cout << "\033[1mcome_from\033[0m: " << std::setw(8) << come_from << ", ";
+    if(route_sec.aspv != nullopt){
+        std::cout << "\033[1mASPV\033[0m: "      << std::setw(7) << route_sec.aspv.value() << ", ";
+    }else if(route_sec.aspv == nullopt){
+        std::cout << "\033[1mASPV\033[0m: "      << "-------" << ", ";
+    }
+    if(route_sec.isec_v != nullopt){
+        std::cout << "\033[1mIsec\033[0m: "      << std::setw(7) << route_sec.isec_v.value() << ", ";
+    }else if(route_sec.isec_v == nullopt){
+        std::cout << "\033[1mIsec\033[0m: "      << "-------" << ", ";
+    }
+
+    std::cout << "\033[1mpath\033[0m: "      << string_path(path) << "\n";
+    return;
+}
+
+void RoutingTable::show_table(void) const{
+    cout << "routing table: (best path: \033[32m>\033[39m )\n";
+    for(auto it = table.begin(); it != table.end(); it++){
+        std::cout << "  " << it->first << "\n";
+        for(const Route* r : it->second){
+            r->show_route();
+        }
+    }
+}
+
 RoutingTable::RoutingTable(vector<Policy> policy, const IPAddress network){
     this->policy = policy;
-    table[network] = {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, nullopt, nullopt}};
+    table[network] = {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, RouteSecurity{nullopt, nullopt}}};
 }
 
 map<IPAddress, const Route*> RoutingTable::get_best_route_list(void){
@@ -142,8 +175,8 @@ optional<Isec> RoutingTable::isec_v(const Route r, const Message update_msg){
 }
 
 void RoutingTable::new_route_security_validation(Route* route, Message update_msg){
-    route->aspv = aspv(*route, update_msg.src);
-    route->isec_v = isec_v(*route, update_msg);
+    route->route_sec.aspv = aspv(*route, update_msg.src);
+    route->route_sec.isec_v = isec_v(*route, update_msg);
     // other security function should be added here.
 }
 
@@ -157,7 +190,7 @@ optional<RouteDiff> RoutingTable::update(Message update_msg){
         case ComeFrom::Peer:     LocPrf = 100; break;
         case ComeFrom::Provider: LocPrf = 50;  break;
     }
-    Route* new_route = new Route{path, come_from, LocPrf, false, nullopt, nullopt};
+    Route* new_route = new Route{path, come_from, LocPrf, false, RouteSecurity{nullopt, nullopt}};
 
     new_route_security_validation(new_route, update_msg);
 
@@ -173,7 +206,7 @@ optional<RouteDiff> RoutingTable::update(Message update_msg){
         }
         if(best == nullptr){
             /* raise BestPathNotExist */
-            if(policy.front() == Policy::Aspa && new_route->aspv == ASPV::Invalid){
+            if(policy.front() == Policy::Aspa && new_route->route_sec.aspv == ASPV::Invalid){
                 new_route->best_path = false;
                 return nullopt;
             }else{
@@ -209,12 +242,12 @@ optional<RouteDiff> RoutingTable::update(Message update_msg){
                         }
                         break;
                     case Policy::Aspa:
-                        if(new_route->aspv == ASPV::Invalid){
+                        if(new_route->route_sec.aspv == ASPV::Invalid){
                             return nullopt;
                         }
                         break;
                     case Policy::Isec:
-                        if(new_route->isec_v == Isec::Invalid){
+                        if(new_route->route_sec.isec_v == Isec::Invalid){
                             return nullopt;
                         }
                         break;
@@ -226,12 +259,12 @@ optional<RouteDiff> RoutingTable::update(Message update_msg){
         }
     }else{ /* when the network DOES NOT HAVE any routes. */
         // SECURITY CHECK;
-        if(contains(policy, Policy::Aspa) && new_route->aspv == ASPV::Invalid){
+        if(contains(policy, Policy::Aspa) && new_route->route_sec.aspv == ASPV::Invalid){
             new_route->best_path = false;
             table[network].push_back(new_route);
             return nullopt;
         }
-        if(contains(policy, Policy::Isec) && new_route->isec_v == Isec::Invalid){
+        if(contains(policy, Policy::Isec) && new_route->route_sec.isec_v == Isec::Invalid){
             new_route->best_path = false;
             table[network].push_back(new_route);
             return nullopt;

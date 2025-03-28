@@ -19,7 +19,39 @@ using namespace YAML;
 #include "util.hpp"
 #include "data_struct.hpp"
 
-class RoutingTable{
+class RouteSecurity{
+public:
+    optional<ASPV> aspv;
+    optional<Isec> isec_v;
+};
+
+class IRoute{
+public:
+    virtual void show_route(void) const = 0;
+    virtual ~IRoute() = default;
+};
+
+class Route : public IRoute{
+public:
+    Path path;
+    ComeFrom come_from;
+    int LocPrf;
+    bool best_path;
+    RouteSecurity route_sec;
+
+public:
+    Route(Path path, ComeFrom come_from, int LocPrf, bool best_path, RouteSecurity route_sec)
+    : path(path), come_from(come_from), LocPrf(LocPrf), best_path(best_path), route_sec(route_sec) {}
+    void show_route(void) const override;
+};
+
+class IRoutingTable{
+public:
+    virtual void show_table(void) const = 0;
+    virtual ~IRoutingTable() = default;
+};
+
+class RoutingTable : public IRoutingTable{
 public:
     map<IPAddress, vector<Route*>> table;
     vector<Policy> policy;
@@ -30,6 +62,7 @@ public:
 public:
     RoutingTable() {}
     RoutingTable(vector<Policy> policy, const IPAddress network);
+    void show_table(void) const override;
     map<IPAddress, const Route*> get_best_route_list(void);
     ASPV verify_pair(variant<ASNumber, Itself> customer, variant<ASNumber, Itself> provider);
     ASPV aspv(const Route r, ASNumber neighbor_as);
