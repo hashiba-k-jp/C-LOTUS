@@ -17,10 +17,7 @@ using namespace std;
 using namespace YAML;
 
 #include "util.hpp"
-#include "data_struct.hpp"
-#include "routing_table.hpp"
 #include "as_class.hpp"
-#include "util_convert.hpp"
 
 #include "security_policies/aspa/aspa.hpp"
 #include "security_policies/isec_proconid/isec_proconid.hpp"
