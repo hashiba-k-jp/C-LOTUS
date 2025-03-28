@@ -23,7 +23,7 @@ using namespace YAML;
 #include "security_policies/isec_proconid/isec_proconid.hpp"
 
 // This class has both RPKI data and security verification processes.
-class SecurityManager{
+class SecurityManager : public ISecurityManager{
     IASManager* as_manager;
     ILogger* logger;
 public:
@@ -35,7 +35,8 @@ public:
       aspa(new ASPA(as_manager, logger)),
       isec(new Isec_ProconID(as_manager, logger)) {}
 
-    bool validation(vector<Policy> policies, Route* route, Message update_msg);
+    bool validation_all_valid(const vector<Policy> policy, const Route& route) const override;
+    void validation(vector<Policy> policies, Route* route, Message update_msg) override;
     void before_run(void);
     void adopt_security_policy(ASNumber asn, Policy policy, int priority);
 };

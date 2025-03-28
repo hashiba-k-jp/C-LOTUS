@@ -18,15 +18,20 @@ using namespace YAML;
 
 #include "util.hpp"
 #include "data_struct.hpp"
-#include "routing_table.hpp"
-// #include "as_class.hpp"
-// #include "util_convert.hpp"
+class Route;
 
 class ISecurityPolicy{
 public:
     // virtual bool validation(void) = 0;
     virtual void before_run(void) = 0;
     virtual ~ISecurityPolicy(void) = default;
+};
+
+class ISecurityManager{
+public:
+    virtual bool validation_all_valid(const vector<Policy> policy, const Route& route) const = 0;
+    virtual void validation(vector<Policy> policies, Route* route, Message update_msg) = 0;
+    virtual ~ISecurityManager() = default;
 };
 
 #endif
