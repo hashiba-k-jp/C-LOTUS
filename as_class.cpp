@@ -4,7 +4,7 @@ ASClass::ASClass(ASNumber as_number, IPAddress address, vector<Policy> policy, o
     this->as_number = as_number;
     this->network_address = address;
     if(given_routing_table == nullopt){
-        this->routing_table = RoutingTable{policy, address};
+        this->routing_table = RoutingTable{{{address, {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, RouteSecurity{nullopt, nullopt}}}}}, policy};
     }else{
         this->routing_table = *given_routing_table;
     }

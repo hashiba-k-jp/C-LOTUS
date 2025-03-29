@@ -18,6 +18,7 @@ using namespace YAML;
 
 #include "util.hpp"
 #include "data_struct.hpp"
+#include "security.hpp"
 
 class RouteSecurity{
 public:
@@ -59,10 +60,11 @@ public:
     map<ASNumber, vector<ASNumber>> public_aspa_list;
     vector<ASNumber> isec_adopted_as_list;
     map<ASNumber, vector<ASNumber>> public_ProConID;
+    shared_ptr<ISecurityManager> sec_manager;
 
 public:
-    RoutingTable() {}
-    RoutingTable(vector<Policy> policy, const IPAddress network);
+    RoutingTable(map<IPAddress, vector<Route*>> table = {}, vector<Policy> policy={Policy::LocPrf, Policy::PathLength})
+    : table(table), policy(policy) {}
     void show_table(void) const override;
     void add_policy(Policy new_policy, int priority) override;
     map<IPAddress, const Route*> get_best_route_list(void);

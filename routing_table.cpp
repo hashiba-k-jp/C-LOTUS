@@ -38,11 +38,6 @@ void RoutingTable::show_table(void) const{
     }
 }
 
-RoutingTable::RoutingTable(vector<Policy> policy, const IPAddress network){
-    this->policy = policy;
-    table[network] = {new Route{Path{{Itself::I}}, ComeFrom::Customer, 1000, true, RouteSecurity{nullopt, nullopt}}};
-}
-
 void RoutingTable::add_policy(Policy new_policy, int priority){
     policy.insert(policy.begin() + (priority - 1), new_policy);
     return;
